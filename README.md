@@ -50,6 +50,29 @@ Stage 2 implements the safe, typed, read-only API client interface for DhanHQ AP
 
 ---
 
+## Stage 3: Conventional GEX Calculation Engine (Completed)
+
+Stage 3 implements the pure, deterministic mathematical core for calculating conventional Black-Scholes Greeks and aggregate Gamma Exposure (GEX) for Indian index and stock derivatives.
+
+### Key Capabilities
+- **Black-Scholes Numerical Core (`src/services/gex/blackScholes.ts`):**
+  - High-precision Abramowitz & Stegun 7.1.26 polynomial approximation for Standard Normal CDF $\Phi(x)$ (error $< 1.5 \times 10^{-7}$).
+  - European Call and Put pricing functions strictly satisfying Put-Call Parity.
+  - Analytical Greeks: Gamma ($\Gamma$), Delta ($\Delta$), and Vega ($\nu$).
+- **Implied Volatility (IV) Numerical Solver (`src/services/gex/ivSolver.ts`):**
+  - Solves theoretical IV directly from traded option market price using a hybrid Newton-Raphson + Bisection method.
+  - Graceful boundary handling for zero, deep ITM/OTM, or sub-intrinsic prices without throwing `NaN`.
+- **Time-to-Expiry & Lot Size Resolution (`src/services/gex/`):**
+  - Precise annualized time-to-expiry $T$ targeting 15:30:00 IST on contract expiration date.
+  - Dynamic lot size resolver prioritizing Dhan metadata with complete fallback lookup for indices (NIFTY, BANKNIFTY, SENSEX, etc.) and F&O equities (RELIANCE, TCS, INFY, HDFCBANK, etc.).
+- **GEX Aggregation Engine (`src/services/gex/engine.ts`):**
+  - Computes Call GEX ($+\Gamma \times \text{Call OI} \times \text{LotSize}$), Put GEX ($-\Gamma \times \text{Put OI} \times \text{LotSize}$), and Net GEX per strike.
+  - Identifies **Call Wall** (major dealer resistance), **Put Wall** (major dealer support), and interpolates **Gamma Flip** level.
+  - Categorizes **Dealer Gamma Bias** (`LONG_GAMMA`, `SHORT_GAMMA`, `NEUTRAL`) and nearest GEX level proximity (`APPROACHING`, `TESTING`, `PINNING`, `BREACHED`).
+- **Comprehensive Test Coverage:** 51 total tests in repository across 6 test suites covering mathematical edge cases, boundary conditions, and option chain scenarios.
+
+---
+
 ## Chart Library Evaluation & Choice
 
 ### Chosen: **TradingView Lightweight Charts (`lightweight-charts`)**
@@ -100,6 +123,7 @@ pnpm build
 
 - **Stage 1 (Completed):** Interactive dark-mode dashboard with mock data, 5-min candlestick charts, GEX overlays, and automated UI test coverage.
 - **Stage 2 (Completed):** DhanHQ API v2 read-only client with rate limiting, exponential backoff, option chain normalization, and test suite.
-- **Stage 3 (Next):** Core Conventional GEX Calculation Engine (Black-Scholes d1/d2, Gamma $\Gamma$, Net GEX per strike, Call Wall, Put Wall, Gamma Flip, Dealer Bias).
-- **Stage 4 (Planned):** End-to-end integration: Live Dhan option chain polling/WebSocket streaming into dashboard.
+- **Stage 3 (Completed):** Core Conventional GEX Calculation Engine (Black-Scholes d1/d2, Gamma $\Gamma$, theoretical IV solver, Net GEX per strike, Call Wall, Put Wall, Gamma Flip, Dealer Bias).
+- **Stage 4 (Next):** Live Dhan option chain polling & WebSocket feed integration into the interactive dashboard with live GEX analytics.
+
 
