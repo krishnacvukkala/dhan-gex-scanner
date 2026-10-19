@@ -29,6 +29,27 @@ Stage 1 implements the interactive frontend user interface using simulated mock 
 
 ---
 
+## Stage 2: DhanHQ API Client & Data Access Layer (Completed)
+
+Stage 2 implements the safe, typed, read-only API client interface for DhanHQ API v2.
+
+### Key Capabilities
+- **Strict Read-Only Enforcement (Rule 12):** Explicit execution guard preventing any order placement, trade, modification, or cancellation endpoints.
+- **Market Data Endpoints:**
+  - `getOptionChain`: Fetches full strike chain for indices and F&O underlyings and normalizes strikes ascending.
+  - `getQuotes`: Batch market quotes for exchange segments and security IDs.
+  - `getIntradayCandles`: Historical 5-minute candlestick bars with OHLCV data.
+  - `getExpiryList`: Contract expiration date discovery.
+- **Resilience & Rate Limiting:**
+  - Token Bucket rate limiter adhering to DhanHQ throughput limits (~10 req/s).
+  - Exponential backoff retry logic for HTTP 429 and transient 5xx network errors.
+- **Security & Hygiene (Rules 6 & 7):**
+  - Safe credential loading from environment variables (`.env` gitignored).
+  - Credential masking utility for diagnostics.
+  - Typed error hierarchy (`DhanAuthError`, `DhanRateLimitError`, `DhanNotFoundError`, `DhanMarketClosedError`).
+
+---
+
 ## Chart Library Evaluation & Choice
 
 ### Chosen: **TradingView Lightweight Charts (`lightweight-charts`)**
@@ -78,6 +99,7 @@ pnpm build
 ## Architecture Roadmap
 
 - **Stage 1 (Completed):** Interactive dark-mode dashboard with mock data, 5-min candlestick charts, GEX overlays, and automated UI test coverage.
-- **Stage 2 (Planned):** DhanHQ API v2 client integration (market quotes, historical data, rate-limit management).
-- **Stage 3 (Planned):** Core Black-Scholes conventional GEX calculation engine (Net GEX, Gamma Flip, Call Wall, Put Wall).
-- **Stage 4 (Planned):** Real-time WebSocket streaming feed and live dashboard synchronization.
+- **Stage 2 (Completed):** DhanHQ API v2 read-only client with rate limiting, exponential backoff, option chain normalization, and test suite.
+- **Stage 3 (Next):** Core Conventional GEX Calculation Engine (Black-Scholes d1/d2, Gamma $\Gamma$, Net GEX per strike, Call Wall, Put Wall, Gamma Flip, Dealer Bias).
+- **Stage 4 (Planned):** End-to-end integration: Live Dhan option chain polling/WebSocket streaming into dashboard.
+
