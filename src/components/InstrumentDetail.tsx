@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Instrument } from '../types';
 import { GexChart } from './GexChart';
 import { OptionChainTable } from './OptionChainTable';
 import { GexDriftChart } from './GexDriftChart';
 import { useGexDriftTracker } from '../hooks/useGexDriftTracker';
+import { calculateDexAndHedgingFlow } from '../services/gex/dexEngine';
+import { calculatePcGex } from '../services/gex/pcGexEngine';
 import {
   X,
   AlertTriangle,
@@ -18,6 +20,7 @@ import {
   TrendingUp,
   FileSpreadsheet,
   Calendar,
+  Gauge,
 } from 'lucide-react';
 
 interface InstrumentDetailProps {
@@ -31,6 +34,7 @@ export const InstrumentDetail: React.FC<InstrumentDetailProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'chart' | 'strikes' | 'chain' | 'drift'>('chart');
   const [selectedExpiry, setSelectedExpiry] = useState<string>('0DTE');
+  const [calculationModel, setCalculationModel] = useState<'CONVENTIONAL' | 'PC_GEX'>('CONVENTIONAL');
   const isPositive = instrument.change >= 0;
   const rangeSpan = Math.max(1, instrument.dayHigh - instrument.dayLow);
   const currentPosPct = Math.min(
@@ -40,13 +44,37 @@ export const InstrumentDetail: React.FC<InstrumentDetailProps> = ({
 
   const strikes = instrument.strikes || [];
 
+  // Experimental PC-GEX Model computation
+  const pcGexResult = useMemo(() => {
+    if (calculationModel === 'PC_GEX' && strikes.length > 0) {
+      return calculatePcGex(strikes, instrument.lastPrice);
+    }
+    return null;
+  }, [calculationModel, strikes, instrument.lastPrice]);
+
+  const effectiveCallWall = pcGexResult ? pcGexResult.pcCallWall : instrument.callWall;
+  const effectivePutWall = pcGexResult ? pcGexResult.pcPutWall : instrument.putWall;
+  const effectiveGammaFlip = pcGexResult ? pcGexResult.pcGammaFlip : instrument.gammaFlip;
+  const effectiveNetGex = pcGexResult ? Number((pcGexResult.netPcTotalGex / 1e7).toFixed(1)) : instrument.netGex;
+  const effectiveDealerBias = pcGexResult ? pcGexResult.pcDealerBias : instrument.dealerBias;
+
+  // Delta Exposure (DEX) & 1% move hedging flow
+  const dexResult = useMemo(() => {
+    return calculateDexAndHedgingFlow(
+      strikes,
+      instrument.lastPrice,
+      instrument.lotSize || 25,
+      effectiveNetGex * 1e7
+    );
+  }, [strikes, instrument.lastPrice, instrument.lotSize, effectiveNetGex]);
+
   const { history: driftHistory } = useGexDriftTracker(
     instrument.symbol,
     instrument.lastPrice,
-    instrument.callWall,
-    instrument.putWall,
-    instrument.gammaFlip,
-    instrument.netGex
+    effectiveCallWall,
+    effectivePutWall,
+    effectiveGammaFlip,
+    effectiveNetGex
   );
 
   return (
@@ -90,6 +118,28 @@ export const InstrumentDetail: React.FC<InstrumentDetailProps> = ({
                   <option value="MONTH">Monthly Expiry</option>
                   <option value="ALL">All Expiries Combined</option>
                 </select>
+              </div>
+
+              {/* Model Selector Toggle (Rule 11 Segregation) */}
+              <div className="model-selector-group" data-testid="model-selector-group">
+                <button
+                  type="button"
+                  className={`model-btn ${calculationModel === 'CONVENTIONAL' ? 'active' : ''}`}
+                  onClick={() => setCalculationModel('CONVENTIONAL')}
+                  data-testid="btn-conventional-gex"
+                  title="Standard Black-Scholes Dealer GEX"
+                >
+                  Conventional GEX
+                </button>
+                <button
+                  type="button"
+                  className={`model-btn experimental ${calculationModel === 'PC_GEX' ? 'active' : ''}`}
+                  onClick={() => setCalculationModel('PC_GEX')}
+                  data-testid="btn-pc-gex"
+                  title="Experimental Put-Call Positional Cash GEX (Rule 11)"
+                >
+                  PC-GEX (Exp.)
+                </button>
               </div>
             </div>
             <div className="detail-name">{instrument.name}</div>
@@ -135,6 +185,16 @@ export const InstrumentDetail: React.FC<InstrumentDetailProps> = ({
           </div>
         )}
 
+        {/* Rule 11 Segregated Experimental PC-GEX Banner */}
+        {calculationModel === 'PC_GEX' && pcGexResult && (
+          <div className="pc-gex-banner" data-testid="pc-gex-experimental-banner">
+            <AlertTriangle size={16} className="text-amber" />
+            <div className="pc-gex-banner-text">
+              <strong>Rule 11 Segregated Experimental Model (PC-GEX):</strong> {pcGexResult.disclaimer}
+            </div>
+          </div>
+        )}
+
         {/* Day Range & Volume bar */}
         <div className="day-range-section">
           <div className="range-labels">
@@ -170,7 +230,7 @@ export const InstrumentDetail: React.FC<InstrumentDetailProps> = ({
               </span>
             </div>
             <div className="metric-value font-mono">
-              ₹{instrument.putWall.toLocaleString('en-IN')}
+              ₹{effectivePutWall.toLocaleString('en-IN')}
             </div>
             <div className="metric-subtext">
               Primary dealer put gamma buffer. Heavy support zone.
@@ -186,7 +246,7 @@ export const InstrumentDetail: React.FC<InstrumentDetailProps> = ({
               </span>
             </div>
             <div className="metric-value font-mono">
-              ₹{instrument.gammaFlip.toLocaleString('en-IN')}
+              ₹{effectiveGammaFlip.toLocaleString('en-IN')}
             </div>
             <div className="metric-subtext">
               Zero net dealer gamma. Volatility expands below this line.
@@ -202,7 +262,7 @@ export const InstrumentDetail: React.FC<InstrumentDetailProps> = ({
               </span>
             </div>
             <div className="metric-value font-mono">
-              ₹{instrument.callWall.toLocaleString('en-IN')}
+              ₹{effectiveCallWall.toLocaleString('en-IN')}
             </div>
             <div className="metric-subtext">
               Primary dealer call gamma cap. Pinning resistance zone.
@@ -212,25 +272,78 @@ export const InstrumentDetail: React.FC<InstrumentDetailProps> = ({
           {/* Net GEX & Bias */}
           <div className="gex-metric-card neutral-border">
             <div className="metric-header">
-              <span className="metric-title">Net GEX & Dealer Bias</span>
+              <span className="metric-title">
+                {calculationModel === 'PC_GEX' ? 'Net PC-GEX' : 'Net GEX & Dealer Bias'}
+              </span>
               <span className="metric-icon neutral-text">
                 <Layers size={16} />
               </span>
             </div>
             <div className="metric-value font-mono">
-              {instrument.netGex > 0 ? '+' : ''}
-              {instrument.netGex.toFixed(1)} {instrument.netGexUnit}
+              {effectiveNetGex > 0 ? '+' : ''}
+              {effectiveNetGex.toFixed(1)} {instrument.netGexUnit}
             </div>
             <div className="metric-subtext">
               <span
                 className={`bias-badge ${
-                  instrument.dealerBias === 'LONG_GAMMA' ? 'long-bias' : 'short-bias'
+                  effectiveDealerBias === 'LONG_GAMMA' ? 'long-bias' : 'short-bias'
                 }`}
               >
-                {instrument.dealerBias === 'LONG_GAMMA'
+                {effectiveDealerBias === 'LONG_GAMMA'
                   ? 'Long Gamma (Mean-Reverting)'
                   : 'Short Gamma (Volatility Accelerating)'}
               </span>
+            </div>
+          </div>
+
+          {/* Net Delta Exposure (DEX) */}
+          <div className="gex-metric-card dex-border" data-testid="metric-dex-card">
+            <div className="metric-header">
+              <span className="metric-title">Net Delta Exposure (DEX)</span>
+              <span className="metric-icon dex-text">
+                <Gauge size={16} />
+              </span>
+            </div>
+            <div className="metric-value font-mono">
+              {dexResult.netDexCr >= 0 ? '+' : ''}
+              ₹{dexResult.netDexCr} Cr
+            </div>
+            <div className="metric-subtext">
+              <span
+                className={`bias-badge ${
+                  dexResult.dealerDirectionalBias === 'NET_LONG_DELTA'
+                    ? 'long-bias'
+                    : dexResult.dealerDirectionalBias === 'NET_SHORT_DELTA'
+                    ? 'short-bias'
+                    : 'neutral-bias'
+                }`}
+              >
+                {dexResult.dealerDirectionalBias === 'NET_LONG_DELTA'
+                  ? 'Long Delta (Dealers Long)'
+                  : dexResult.dealerDirectionalBias === 'NET_SHORT_DELTA'
+                  ? 'Short Delta (Dealers Short)'
+                  : 'Delta Neutral'}
+              </span>
+            </div>
+          </div>
+
+          {/* 1% Underlying Move Hedging Flow Requirement */}
+          <div className="gex-metric-card hedge-border" data-testid="metric-hedge-flow-card">
+            <div className="metric-header">
+              <span className="metric-title">1% Move Re-hedging Flow</span>
+              <span className="metric-icon hedge-text">
+                <TrendingUp size={16} />
+              </span>
+            </div>
+            <div className="metric-value font-mono">
+              ₹{dexResult.hedgingFlow1PctCr} Cr
+            </div>
+            <div className="metric-subtext">
+              {dexResult.hedgingAction === 'DEALERS_SELL_RALLIES_BUY_DIPS'
+                ? 'Sell Rallies / Buy Dips'
+                : dexResult.hedgingAction === 'DEALERS_BUY_RALLIES_SELL_DIPS'
+                ? 'Buy Rallies / Sell Dips'
+                : 'Neutral Flow'}
             </div>
           </div>
         </div>
@@ -285,9 +398,9 @@ export const InstrumentDetail: React.FC<InstrumentDetailProps> = ({
             <GexChart
               candles={instrument.candles}
               symbol={instrument.symbol}
-              callWall={instrument.callWall}
-              putWall={instrument.putWall}
-              gammaFlip={instrument.gammaFlip}
+              callWall={effectiveCallWall}
+              putWall={effectivePutWall}
+              gammaFlip={effectiveGammaFlip}
               currentPrice={instrument.lastPrice}
               prevSession={instrument.prevSession}
             />
@@ -314,9 +427,9 @@ export const InstrumentDetail: React.FC<InstrumentDetailProps> = ({
                 <tbody>
                   {strikes.map((s) => {
                     const isNetPositive = s.netGex >= 0;
-                    const isCallWall = s.strikePrice === instrument.callWall;
-                    const isPutWall = s.strikePrice === instrument.putWall;
-                    const isFlip = Math.abs(s.strikePrice - instrument.gammaFlip) < 25;
+                    const isCallWall = s.strikePrice === effectiveCallWall;
+                    const isPutWall = s.strikePrice === effectivePutWall;
+                    const isFlip = Math.abs(s.strikePrice - effectiveGammaFlip) < 25;
                     const distanceToSpot = s.strikePrice - instrument.lastPrice;
 
                     return (
@@ -393,9 +506,9 @@ export const InstrumentDetail: React.FC<InstrumentDetailProps> = ({
           <OptionChainTable
             strikes={strikes}
             spotPrice={instrument.lastPrice}
-            callWall={instrument.callWall}
-            putWall={instrument.putWall}
-            gammaFlip={instrument.gammaFlip}
+            callWall={effectiveCallWall}
+            putWall={effectivePutWall}
+            gammaFlip={effectiveGammaFlip}
             symbol={instrument.symbol}
           />
         )}
@@ -411,11 +524,23 @@ export const InstrumentDetail: React.FC<InstrumentDetailProps> = ({
         {/* Methodology Footer */}
         <div className="detail-footer-notes">
           <div className="note-card">
-            <h4>Conventional GEX Reference</h4>
-            <p>
-              In conventional Black-Scholes GEX, dealers are assumed to be long calls and short puts at strike open interest.
-              Positive net gamma implies dealers trade counter-trend (dampening market swings), while negative net gamma forces dealers to trade with trend (amplifying price moves).
-            </p>
+            {calculationModel === 'PC_GEX' ? (
+              <>
+                <h4 className="text-amber">Experimental PC-GEX Model Reference (Rule 11)</h4>
+                <p>
+                  PC-GEX (Put-Call / Positional-Cash Gamma Exposure) balances call gamma against put gamma with spot cash adjustments.
+                  Notice: This analytical model is strictly experimental. In accordance with project Rule 11, it is segregated from conventional risk reporting and never synthesizes missing footprint data.
+                </p>
+              </>
+            ) : (
+              <>
+                <h4>Conventional GEX Reference</h4>
+                <p>
+                  In conventional Black-Scholes GEX, dealers are assumed to be long calls and short puts at strike open interest.
+                  Positive net gamma implies dealers trade counter-trend (dampening market swings), while negative net gamma forces dealers to trade with trend (amplifying price moves).
+                </p>
+              </>
+            )}
           </div>
         </div>
       </div>

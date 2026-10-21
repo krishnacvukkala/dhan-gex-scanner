@@ -206,4 +206,34 @@ describe('Dhan GEX Scanner - Stage 1 Frontend Dashboard', () => {
     fireEvent.click(driftTab);
     expect(screen.getByTestId('gex-drift-container')).toBeInTheDocument();
   });
+
+  it('opens and closes Cross-Index Institutional Gamma Radar modal from navbar', () => {
+    render(<App />);
+
+    const openRadarBtn = screen.getByTestId('open-radar-btn');
+    fireEvent.click(openRadarBtn);
+
+    expect(screen.getByTestId('cross-index-radar')).toBeInTheDocument();
+    expect(screen.getByText('Cross-Index Institutional Gamma Radar')).toBeInTheDocument();
+
+    // Close radar modal
+    const closeBtn = screen.getByText('✕');
+    fireEvent.click(closeBtn);
+    expect(screen.queryByTestId('cross-index-radar')).not.toBeInTheDocument();
+  });
+
+  it('opens and closes Daily Session Recap modal from navbar', () => {
+    render(<App />);
+
+    const openRecapBtn = screen.getByTestId('open-recap-btn');
+    fireEvent.click(openRecapBtn);
+
+    expect(screen.getByTestId('session-recap-modal')).toBeInTheDocument();
+    expect(screen.getByText(/Daily Institutional GEX Session Recap/i)).toBeInTheDocument();
+
+    // Close recap modal
+    const closeBtn = screen.getByTestId('close-recap-modal-btn');
+    fireEvent.click(closeBtn);
+    expect(screen.queryByTestId('session-recap-modal')).not.toBeInTheDocument();
+  });
 });

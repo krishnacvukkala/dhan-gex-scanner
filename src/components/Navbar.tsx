@@ -9,6 +9,8 @@ import {
   Radio,
   Zap,
   Bell,
+  Compass,
+  FileText,
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -24,6 +26,8 @@ interface NavbarProps {
   isPolling?: boolean;
   unreadAlertsCount?: number;
   onOpenAlerts?: () => void;
+  onOpenRadar?: () => void;
+  onOpenRecap?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -39,6 +43,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   isPolling = false,
   unreadAlertsCount = 0,
   onOpenAlerts,
+  onOpenRadar,
+  onOpenRecap,
 }) => {
   const getStatusDotClass = () => {
     switch (connectionStatus) {
@@ -180,6 +186,32 @@ export const Navbar: React.FC<NavbarProps> = ({
                 {unreadAlertsCount}
               </span>
             )}
+          </button>
+        )}
+
+        {onOpenRadar && (
+          <button
+            type="button"
+            className="icon-action-btn radar-trigger-btn"
+            onClick={onOpenRadar}
+            title="Institutional Cross-Index Gamma Radar & Heatmap"
+            data-testid="open-radar-btn"
+            aria-label="Cross-Index Radar"
+          >
+            <Compass size={16} />
+          </button>
+        )}
+
+        {onOpenRecap && (
+          <button
+            type="button"
+            className="icon-action-btn recap-trigger-btn"
+            onClick={onOpenRecap}
+            title="Daily Session Recap & Audit Journal"
+            data-testid="open-recap-btn"
+            aria-label="Session Recap"
+          >
+            <FileText size={16} />
           </button>
         )}
 

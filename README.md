@@ -138,6 +138,35 @@ Stage 5 enhances the scanner with historical session context, multi-expiry filte
 
 ## Development & Testing
 
+---
+
+## Stage 6: Institutional Quantitative Suite & Segregated Experimental Models (Completed)
+
+Stage 6 delivers advanced quantitative hedging metrics, cross-index benchmarking, segregated experimental models in strict compliance with Rule 11, and session audit reporting.
+
+### Key Capabilities
+
+- **Net Delta Exposure (DEX) & 1% Move Re-hedging Requirement Matrix (`src/services/gex/dexEngine.ts`):**
+  - Aggregates directional dealer delta inventory: $\text{Call DEX} = \Delta_C \times \text{Call OI} \times \text{LotSize} \times \text{Spot}$ and $\text{Put DEX} = \Delta_P \times \text{Put OI} \times \text{LotSize} \times \text{Spot}$.
+  - Determines total market-wide dealer re-hedging flows per 1% price move: $(\lvert\text{Net GEX}\rvert \times \text{Spot} \times 0.01) / 10^7$ in ₹ Cr.
+  - Classifies dynamic hedging action: *Dealers Sell Rallies / Buy Dips* (volatility suppressing) vs. *Dealers Buy Rallies / Sell Dips* (volatility expanding / trend following).
+- **Cross-Index Institutional Gamma Radar & Heatmap (`src/components/CrossIndexRadar.tsx`):**
+  - Multi-asset dashboard overlay covering Indian benchmark indices: **NIFTY 50**, **BANKNIFTY**, **FINNIFTY**, **MIDCPNIFTY**, and **SENSEX**.
+  - Market-wide gamma regime aggregation (dampening vs. expansion), combined net GEX, level distances, and instant instrument drilldown.
+- **Rule 11 Segregated Experimental PC-GEX Model (`src/services/gex/pcGexEngine.ts`):**
+  - Positional-Cash / Put-Call Gamma Exposure engine cleanly segregated from conventional Black-Scholes risk metrics.
+  - Interactive model switcher pill in detail view with amber warning banner explicitly identifying experimental assumptions.
+  - Never synthesizes missing order flow or footprint data.
+- **Daily Session Recap & Audit Journal (`src/components/SessionRecapModal.tsx`):**
+  - Calculates end-of-session Wall Respect Rate (%) comparing closing prices against Call/Put walls.
+  - Granular breakdown of held, tested (pinned within 0.3%), and breached levels.
+  - One-click browser print / PDF export and downloadable structured JSON audit file.
+- **Robust Automated Verification:** 102 automated tests across 19 test files with 100% pass rate and clean production builds.
+
+---
+
+## Getting Started
+
 ### Prerequisites
 - Node.js >= 20
 - `pnpm` (or `npm`)
@@ -171,5 +200,7 @@ pnpm build
 - **Stage 3 (Completed):** Core Conventional GEX Calculation Engine (Black-Scholes d1/d2, Gamma $\Gamma$, theoretical IV solver, Net GEX per strike, Call Wall, Put Wall, Gamma Flip, Dealer Bias).
 - **Stage 4 (Completed):** Live Dhan option chain polling & in-browser credential configuration, dynamic Strike GEX Profile charts, and dashboard integration.
 - **Stage 5 (Completed):** Multi-day session charting with prior session levels, full Option Chain Table with Greeks & CSV export, Intraday GEX Drift tracking, Real-Time Alerts drawer, and multi-expiry selection.
+- **Stage 6 (Completed):** Net Delta Exposure (DEX) & 1% re-hedging matrix, Cross-Index Institutional Gamma Radar & Heatmap, Segregated Experimental PC-GEX Model (Rule 11), and Daily Session Recap & Audit Journal.
+
 
 

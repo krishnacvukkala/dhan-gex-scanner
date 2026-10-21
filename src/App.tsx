@@ -10,6 +10,8 @@ import { LoadingState, ErrorState, EmptyState } from './components/StateViews';
 import { useLiveGexScanner } from './hooks/useLiveGexScanner';
 import { useGexAlerts } from './hooks/useGexAlerts';
 import { AlertsDrawer } from './components/AlertsDrawer';
+import { CrossIndexRadar } from './components/CrossIndexRadar';
+import { SessionRecapModal } from './components/SessionRecapModal';
 import {
   Info,
   ShieldAlert,
@@ -27,6 +29,8 @@ export const App: React.FC = () => {
   const [viewState, setViewState] = useState<ViewState>('NORMAL');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAlertsOpen, setIsAlertsOpen] = useState(false);
+  const [isRadarOpen, setIsRadarOpen] = useState(false);
+  const [isRecapOpen, setIsRecapOpen] = useState(false);
 
   // Live DhanHQ GEX Scanner hook
   const {
@@ -130,6 +134,8 @@ export const App: React.FC = () => {
           setIsAlertsOpen(true);
           markAllAsRead();
         }}
+        onOpenRadar={() => setIsRadarOpen(true)}
+        onOpenRecap={() => setIsRecapOpen(true)}
       />
 
       <main className="app-main">
@@ -291,6 +297,33 @@ export const App: React.FC = () => {
           const match = rawInstruments.find((i) => i.symbol === symbol);
           if (match) setSelectedInstrument(match);
         }}
+      />
+
+      {/* Institutional Cross-Index Gamma Radar Modal */}
+      {isRadarOpen && (
+        <div
+          className="radar-modal-backdrop"
+          onClick={() => setIsRadarOpen(false)}
+          data-testid="radar-modal-backdrop"
+        >
+          <div className="radar-modal-card" onClick={(e) => e.stopPropagation()}>
+            <CrossIndexRadar
+              instruments={rawInstruments}
+              onSelectInstrument={(inst) => {
+                setSelectedInstrument(inst);
+                setIsRadarOpen(false);
+              }}
+              onClose={() => setIsRadarOpen(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Daily Session Recap & Audit Journal Modal */}
+      <SessionRecapModal
+        isOpen={isRecapOpen}
+        onClose={() => setIsRecapOpen(false)}
+        instruments={rawInstruments}
       />
     </div>
   );
