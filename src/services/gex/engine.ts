@@ -1,5 +1,5 @@
 import { NormalizedOptionChain } from '../dhan/types';
-import { bsGamma } from './blackScholes';
+import { bsDelta, bsGamma } from './blackScholes';
 import { solveImpliedVolatility } from './ivSolver';
 import { calculateTimeToExpiryYears } from './timeToExpiry';
 import { resolveLotSize } from './lotSize';
@@ -83,9 +83,11 @@ export function calculateOptionChainGex(
     const callIv = solveImpliedVolatility(spot, K, r, T, item.callPrice, 'CALL');
     const putIv = solveImpliedVolatility(spot, K, r, T, item.putPrice, 'PUT');
 
-    // Calculate analytical Gammas
+    // Calculate analytical Gammas and Deltas
     const callGamma = bsGamma(spot, K, r, T, callIv);
     const putGamma = bsGamma(spot, K, r, T, putIv);
+    const callDelta = bsDelta(spot, K, r, T, callIv, 'CALL');
+    const putDelta = bsDelta(spot, K, r, T, putIv, 'PUT');
 
     // Call GEX is positive (dealer short call -> positive market gamma exposure)
     const callGex = callGamma * item.callOi * lotSize;
@@ -117,10 +119,14 @@ export function calculateOptionChainGex(
       callOi: item.callOi,
       callIv,
       callGamma,
+      callDelta,
+      callPrice: item.callPrice,
       callGex,
       putOi: item.putOi,
       putIv,
       putGamma,
+      putDelta,
+      putPrice: item.putPrice,
       putGex,
       netGex,
     });

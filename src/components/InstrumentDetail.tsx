@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { Instrument } from '../types';
 import { GexChart } from './GexChart';
+import { OptionChainTable } from './OptionChainTable';
+import { GexDriftChart } from './GexDriftChart';
+import { useGexDriftTracker } from '../hooks/useGexDriftTracker';
 import {
   X,
   AlertTriangle,
@@ -12,6 +15,9 @@ import {
   BarChart2,
   Table,
   CheckCircle2,
+  TrendingUp,
+  FileSpreadsheet,
+  Calendar,
 } from 'lucide-react';
 
 interface InstrumentDetailProps {
@@ -23,7 +29,8 @@ export const InstrumentDetail: React.FC<InstrumentDetailProps> = ({
   instrument,
   onClose,
 }) => {
-  const [activeTab, setActiveTab] = useState<'chart' | 'strikes'>('chart');
+  const [activeTab, setActiveTab] = useState<'chart' | 'strikes' | 'chain' | 'drift'>('chart');
+  const [selectedExpiry, setSelectedExpiry] = useState<string>('0DTE');
   const isPositive = instrument.change >= 0;
   const rangeSpan = Math.max(1, instrument.dayHigh - instrument.dayLow);
   const currentPosPct = Math.min(
@@ -32,6 +39,15 @@ export const InstrumentDetail: React.FC<InstrumentDetailProps> = ({
   );
 
   const strikes = instrument.strikes || [];
+
+  const { history: driftHistory } = useGexDriftTracker(
+    instrument.symbol,
+    instrument.lastPrice,
+    instrument.callWall,
+    instrument.putWall,
+    instrument.gammaFlip,
+    instrument.netGex
+  );
 
   return (
     <div className="detail-modal-backdrop" onClick={onClose} data-testid="instrument-detail-modal">
@@ -61,6 +77,20 @@ export const InstrumentDetail: React.FC<InstrumentDetailProps> = ({
                   Exp: {instrument.expiry}
                 </span>
               )}
+              <div className="detail-expiry-selector" title="Filter GEX by contract expiration series">
+                <Calendar size={12} className="text-slate-400" />
+                <select
+                  value={selectedExpiry}
+                  onChange={(e) => setSelectedExpiry(e.target.value)}
+                  className="expiry-dropdown font-mono"
+                  data-testid="expiry-selector-dropdown"
+                >
+                  <option value="0DTE">Weekly (0DTE/Current)</option>
+                  <option value="NEXT">Next Weekly</option>
+                  <option value="MONTH">Monthly Expiry</option>
+                  <option value="ALL">All Expiries Combined</option>
+                </select>
+              </div>
             </div>
             <div className="detail-name">{instrument.name}</div>
           </div>
@@ -205,7 +235,7 @@ export const InstrumentDetail: React.FC<InstrumentDetailProps> = ({
           </div>
         </div>
 
-        {/* View Tabs: Chart vs Strike GEX Profile */}
+        {/* View Tabs: Chart vs Strike GEX Profile vs Option Chain vs Drift */}
         <div className="detail-view-tabs" data-testid="detail-view-tabs">
           <button
             type="button"
@@ -214,7 +244,7 @@ export const InstrumentDetail: React.FC<InstrumentDetailProps> = ({
             data-testid="tab-chart"
           >
             <BarChart2 size={14} />
-            <span>5-Min Candlestick & GEX Overlays</span>
+            <span>5-Min Candles & Levels</span>
           </button>
           {strikes.length > 0 && (
             <button
@@ -224,9 +254,29 @@ export const InstrumentDetail: React.FC<InstrumentDetailProps> = ({
               data-testid="tab-strikes"
             >
               <Table size={14} />
-              <span>Strike GEX Distribution ({strikes.length} Strikes)</span>
+              <span>Strike GEX Bars ({strikes.length})</span>
             </button>
           )}
+          {strikes.length > 0 && (
+            <button
+              type="button"
+              className={`detail-tab-btn ${activeTab === 'chain' ? 'active' : ''}`}
+              onClick={() => setActiveTab('chain')}
+              data-testid="tab-chain"
+            >
+              <FileSpreadsheet size={14} />
+              <span>Option Chain Table & Greeks</span>
+            </button>
+          )}
+          <button
+            type="button"
+            className={`detail-tab-btn ${activeTab === 'drift' ? 'active' : ''}`}
+            onClick={() => setActiveTab('drift')}
+            data-testid="tab-drift"
+          >
+            <TrendingUp size={14} />
+            <span>Intraday GEX Drift ({driftHistory.length} pts)</span>
+          </button>
         </div>
 
         {/* Tab 1: Chart View */}
@@ -239,6 +289,7 @@ export const InstrumentDetail: React.FC<InstrumentDetailProps> = ({
               putWall={instrument.putWall}
               gammaFlip={instrument.gammaFlip}
               currentPrice={instrument.lastPrice}
+              prevSession={instrument.prevSession}
             />
           </div>
         )}
@@ -335,6 +386,26 @@ export const InstrumentDetail: React.FC<InstrumentDetailProps> = ({
               </table>
             </div>
           </div>
+        )}
+
+        {/* Tab 3: Full Option Chain & Greeks View */}
+        {activeTab === 'chain' && strikes.length > 0 && (
+          <OptionChainTable
+            strikes={strikes}
+            spotPrice={instrument.lastPrice}
+            callWall={instrument.callWall}
+            putWall={instrument.putWall}
+            gammaFlip={instrument.gammaFlip}
+            symbol={instrument.symbol}
+          />
+        )}
+
+        {/* Tab 4: Intraday GEX Drift Chart */}
+        {activeTab === 'drift' && (
+          <GexDriftChart
+            history={driftHistory}
+            symbol={instrument.symbol}
+          />
         )}
 
         {/* Methodology Footer */}

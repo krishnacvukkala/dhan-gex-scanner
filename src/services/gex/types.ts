@@ -13,10 +13,14 @@ export interface StrikeGexDetail {
   callOi: number;
   callIv: number;
   callGamma: number;
+  callDelta?: number;
+  callPrice?: number;
   callGex: number; // in shares/contracts (positive)
   putOi: number;
   putIv: number;
   putGamma: number;
+  putDelta?: number;
+  putPrice?: number;
   putGex: number; // in shares/contracts (negative by convention)
   netGex: number; // callGex + putGex
 }

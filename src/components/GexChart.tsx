@@ -16,6 +16,7 @@ interface GexChartProps {
   putWall: number;
   gammaFlip: number;
   currentPrice: number;
+  prevSession?: import('../types').PrevSessionGexLevels;
 }
 
 export const GexChart: React.FC<GexChartProps> = ({
@@ -25,9 +26,11 @@ export const GexChart: React.FC<GexChartProps> = ({
   putWall,
   gammaFlip,
   currentPrice,
+  prevSession,
 }) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartApiRef = useRef<IChartApi | null>(null);
+  const [showPrevSession, setShowPrevSession] = React.useState<boolean>(true);
 
   useEffect(() => {
     if (!chartContainerRef.current) return;
@@ -131,7 +134,7 @@ export const GexChart: React.FC<GexChartProps> = ({
       }))
     );
 
-    // 3. GEX Price Line Overlays (Placeholders for real GEX levels)
+    // 3. Current Session GEX Price Line Overlays
     // Call Wall (Major Resistance)
     candleSeries.createPriceLine({
       price: callWall,
@@ -139,7 +142,7 @@ export const GexChart: React.FC<GexChartProps> = ({
       lineWidth: 2,
       lineStyle: LineStyle.Dashed,
       axisLabelVisible: true,
-      title: 'CALL WALL (Resistance)',
+      title: 'CALL WALL',
     });
 
     // Put Wall (Major Support)
@@ -149,7 +152,7 @@ export const GexChart: React.FC<GexChartProps> = ({
       lineWidth: 2,
       lineStyle: LineStyle.Dashed,
       axisLabelVisible: true,
-      title: 'PUT WALL (Support)',
+      title: 'PUT WALL',
     });
 
     // Gamma Flip (0 Gamma Inflection Level)
@@ -172,6 +175,50 @@ export const GexChart: React.FC<GexChartProps> = ({
       title: 'SPOT',
     });
 
+    // 4. Previous Session GEX Levels (if available and enabled)
+    if (prevSession && showPrevSession) {
+      if (prevSession.callWall) {
+        candleSeries.createPriceLine({
+          price: prevSession.callWall,
+          color: '#fda4af',
+          lineWidth: 1,
+          lineStyle: LineStyle.Dotted,
+          axisLabelVisible: true,
+          title: 'PREV CALL WALL',
+        });
+      }
+      if (prevSession.putWall) {
+        candleSeries.createPriceLine({
+          price: prevSession.putWall,
+          color: '#6ee7b7',
+          lineWidth: 1,
+          lineStyle: LineStyle.Dotted,
+          axisLabelVisible: true,
+          title: 'PREV PUT WALL',
+        });
+      }
+      if (prevSession.gammaFlip) {
+        candleSeries.createPriceLine({
+          price: prevSession.gammaFlip,
+          color: '#fde68a',
+          lineWidth: 1,
+          lineStyle: LineStyle.Dotted,
+          axisLabelVisible: true,
+          title: 'PREV FLIP',
+        });
+      }
+      if (prevSession.close) {
+        candleSeries.createPriceLine({
+          price: prevSession.close,
+          color: '#94a3b8',
+          lineWidth: 1,
+          lineStyle: LineStyle.Dashed,
+          axisLabelVisible: true,
+          title: 'PREV CLOSE',
+        });
+      }
+    }
+
     chart.timeScale().fitContent();
 
     // Responsive Resize Handler
@@ -189,14 +236,14 @@ export const GexChart: React.FC<GexChartProps> = ({
       chart.remove();
       chartApiRef.current = null;
     };
-  }, [candles, symbol, callWall, putWall, gammaFlip, currentPrice]);
+  }, [candles, symbol, callWall, putWall, gammaFlip, currentPrice, prevSession, showPrevSession]);
 
   return (
     <div className="chart-wrapper" data-testid="gex-chart-container">
       <div className="chart-header">
         <div className="chart-title">
           <span className="chart-symbol">{symbol}</span>
-          <span className="chart-timeframe">5-Min Candles + Volume</span>
+          <span className="chart-timeframe">Multi-Day 5-Min Candles + Volume</span>
         </div>
         <div className="chart-legend">
           <span className="legend-item support">
@@ -208,6 +255,16 @@ export const GexChart: React.FC<GexChartProps> = ({
           <span className="legend-item resistance">
             <span className="legend-dot red"></span> Call Wall: ₹{callWall.toLocaleString('en-IN')}
           </span>
+          {prevSession && (
+            <button
+              type="button"
+              className={`prev-session-toggle-btn ${showPrevSession ? 'active' : ''}`}
+              onClick={() => setShowPrevSession(!showPrevSession)}
+              title="Toggle previous session benchmark GEX levels"
+            >
+              Prior Session: {showPrevSession ? 'ON' : 'OFF'}
+            </button>
+          )}
         </div>
       </div>
       <div

@@ -8,6 +8,7 @@ import {
   Settings,
   Radio,
   Zap,
+  Bell,
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -21,6 +22,8 @@ interface NavbarProps {
   onOpenSettings: () => void;
   onRefreshNow?: () => void;
   isPolling?: boolean;
+  unreadAlertsCount?: number;
+  onOpenAlerts?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -34,6 +37,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenSettings,
   onRefreshNow,
   isPolling = false,
+  unreadAlertsCount = 0,
+  onOpenAlerts,
 }) => {
   const getStatusDotClass = () => {
     switch (connectionStatus) {
@@ -157,6 +162,24 @@ export const Navbar: React.FC<NavbarProps> = ({
             aria-label="Refresh live data"
           >
             <RefreshCw size={15} className={isPolling ? 'spin text-cyan' : ''} />
+          </button>
+        )}
+
+        {onOpenAlerts && (
+          <button
+            type="button"
+            className="icon-action-btn alerts-trigger-btn"
+            onClick={onOpenAlerts}
+            title={`${unreadAlertsCount} active GEX level alerts`}
+            data-testid="open-alerts-btn"
+            aria-label="View Alerts"
+          >
+            <Bell size={16} />
+            {unreadAlertsCount > 0 && (
+              <span className="alerts-badge-pill" data-testid="alerts-badge-count">
+                {unreadAlertsCount}
+              </span>
+            )}
           </button>
         )}
 

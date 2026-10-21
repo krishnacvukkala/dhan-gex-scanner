@@ -93,6 +93,31 @@ Stage 4 integrates the Stage 2 DhanHQ read-only API client and Stage 3 Conventio
 
 ---
 
+## Stage 5: Advanced Institutional GEX Analytics & Multi-Day Intelligence (Completed)
+
+Stage 5 enhances the scanner with historical session context, multi-expiry filtering, full option chain tables with Greeks, intraday drift tracking, and a real-time alerting engine.
+
+### Key Capabilities
+- **Multi-Day 5-Minute Candlestick Charting with Prior Session GEX Levels:**
+  - 3 full trading sessions of 5-minute candles showing historical price action.
+  - Interactive **Prior Session Toggle (`Prior Session: ON / OFF`)** displaying previous day benchmark levels (`PREV CALL WALL`, `PREV PUT WALL`, `PREV FLIP`, and `PREV CLOSE`).
+- **Full Interactive Option Chain Table & Greeks:**
+  - Tabular option chain centered around Strike Price with Open Interest, LTP, Implied Volatility (IV %), Delta ($\Delta$), Gamma ($\Gamma$), Call GEX, Put GEX, and Net GEX.
+  - Color-coded badges for `ATM`, `CALL WALL`, `PUT WALL`, and `GAMMA FLIP`.
+  - Strike range selector (`ATM ±10`, `ATM ±15`, `ATM ±20`, `All Strikes`) and live strike search filter.
+  - One-click **Export CSV** download with timestamped filenames (`[SYMBOL]_GEX_Option_Chain_[DATE].csv`).
+- **Intraday GEX Drift Tracking:**
+  - Dedicated time-series SVG chart tracking the migration of Spot Price against Call Wall, Put Wall, and Gamma Flip across 30-minute session intervals.
+  - Summary analytics diagnosing whether dealer walls are expanding higher or compressing lower.
+- **Real-Time GEX Level Alerting System:**
+  - Background scanning engine detecting Critical Wall Testing ($\le 0.15\%$), Wall Approaching ($\le 0.50\%$), and Gamma Flip Regime Transitions.
+  - Slide-out alert drawer with severity filter pills, Web Audio synthetic chime toggle, and unread count badge in Navbar.
+- **Multi-Expiry Selection:**
+  - Contract expiration dropdown supporting Weekly (0DTE/Current), Next Weekly, Monthly, and All Combined Expiries.
+- **Robust Test Coverage:** 88 total automated unit and component tests passing across 14 test suites in Vitest.
+
+---
+
 ## Chart Library Evaluation & Choice
 
 ### Chosen: **TradingView Lightweight Charts (`lightweight-charts`)**
@@ -145,6 +170,6 @@ pnpm build
 - **Stage 2 (Completed):** DhanHQ API v2 read-only client with rate limiting, exponential backoff, option chain normalization, and test suite.
 - **Stage 3 (Completed):** Core Conventional GEX Calculation Engine (Black-Scholes d1/d2, Gamma $\Gamma$, theoretical IV solver, Net GEX per strike, Call Wall, Put Wall, Gamma Flip, Dealer Bias).
 - **Stage 4 (Completed):** Live Dhan option chain polling & in-browser credential configuration, dynamic Strike GEX Profile charts, and dashboard integration.
-- **Stage 5 (Next):** Intraday GEX level drift tracking, strike-level tabular analysis with CSV export, and breach/pin alert notifications.
+- **Stage 5 (Completed):** Multi-day session charting with prior session levels, full Option Chain Table with Greeks & CSV export, Intraday GEX Drift tracking, Real-Time Alerts drawer, and multi-expiry selection.
 
 

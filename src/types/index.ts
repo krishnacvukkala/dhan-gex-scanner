@@ -32,6 +32,14 @@ export interface NearestGexInfo {
   status: EventStatus;
 }
 
+export interface PrevSessionGexLevels {
+  callWall: number;
+  putWall: number;
+  gammaFlip: number;
+  close: number;
+  sessionDate: string;
+}
+
 export interface Instrument {
   id: string;
   symbol: string;
@@ -54,6 +62,7 @@ export interface Instrument {
   isSimulated: boolean;
   candles: CandleData[];
   strikes?: import('../services/gex/types').StrikeGexDetail[];
+  prevSession?: PrevSessionGexLevels;
   underlyingScrip?: number;
   expiry?: string;
   lotSize?: number;

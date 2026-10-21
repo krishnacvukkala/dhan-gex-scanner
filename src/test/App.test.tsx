@@ -164,4 +164,46 @@ describe('Dhan GEX Scanner - Stage 1 Frontend Dashboard', () => {
 
     expect(screen.getByTestId('simulated-banner')).toBeInTheDocument();
   });
+
+  it('opens and closes Real-Time GEX Alerts drawer when clicking alerts button in navbar', () => {
+    render(<App />);
+
+    const alertsBtn = screen.getByTestId('open-alerts-btn');
+    fireEvent.click(alertsBtn);
+
+    expect(screen.getByTestId('alerts-drawer-panel')).toBeInTheDocument();
+
+    const closeBtn = screen.getByTestId('close-alerts-drawer-btn');
+    fireEvent.click(closeBtn);
+
+    expect(screen.queryByTestId('alerts-drawer-panel')).not.toBeInTheDocument();
+  });
+
+  it('navigates across all Stage 5 tabs in instrument detail modal', () => {
+    render(<App />);
+
+    // Click NIFTY 50 row
+    const niftyRow = screen.getByText('NIFTY 50');
+    fireEvent.click(niftyRow);
+
+    expect(screen.getByTestId('instrument-detail-modal')).toBeInTheDocument();
+
+    // 1. Initial chart panel
+    expect(screen.getByTestId('chart-view-panel')).toBeInTheDocument();
+
+    // 2. Click Strike GEX Bars tab
+    const strikesTab = screen.getByTestId('tab-strikes');
+    fireEvent.click(strikesTab);
+    expect(screen.getByTestId('strike-profile-panel')).toBeInTheDocument();
+
+    // 3. Click Option Chain Table tab
+    const chainTab = screen.getByTestId('tab-chain');
+    fireEvent.click(chainTab);
+    expect(screen.getByTestId('option-chain-table')).toBeInTheDocument();
+
+    // 4. Click Intraday GEX Drift tab
+    const driftTab = screen.getByTestId('tab-drift');
+    fireEvent.click(driftTab);
+    expect(screen.getByTestId('gex-drift-container')).toBeInTheDocument();
+  });
 });

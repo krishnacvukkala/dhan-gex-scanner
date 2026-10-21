@@ -1,20 +1,22 @@
 import { Instrument, CandleData } from '../types';
+import { bsGamma, bsDelta, bsCallPrice, bsPutPrice } from '../services/gex/blackScholes';
+import { StrikeGexDetail } from '../services/gex/types';
 
 /**
- * Generates realistic 5-minute candle data for simulation.
- * Timestamps are generated in ascending 300-second (5 min) increments.
+ * Generates realistic 5-minute candle data across multiple trading sessions (default: 3 days = 225 candles).
+ * Timestamps are generated in strictly ascending 300-second (5 min) increments.
  */
 function generate5MinCandles(
   basePrice: number,
   volatility: number,
-  count = 75,
+  count = 225,
   trend = 0.0002
 ): CandleData[] {
   const candles: CandleData[] = [];
   const nowSec = Math.floor(Date.now() / 1000);
   const startTime = nowSec - count * 300;
 
-  let currentPrice = basePrice * (1 - count * trend * 0.5);
+  let currentPrice = basePrice * (1 - count * trend * 0.4);
 
   for (let i = 0; i < count; i++) {
     const time = startTime + i * 300;
@@ -30,6 +32,61 @@ function generate5MinCandles(
   }
 
   return candles;
+}
+
+/**
+ * Generates realistic strike-level option chain Greeks and GEX details for simulation.
+ */
+function generateMockStrikes(
+  spot: number,
+  step: number,
+  lotSize: number
+): StrikeGexDetail[] {
+  const strikes: StrikeGexDetail[] = [];
+  const atm = Math.round(spot / step) * step;
+  const T = 4 / 365; // ~4 days to weekly expiration
+  const r = 0.065;
+
+  for (let i = -12; i <= 12; i++) {
+    const K = atm + i * step;
+    const dist = (K - spot) / spot;
+    const callIv = Math.max(0.08, 0.15 + dist * 0.15);
+    const putIv = Math.max(0.08, 0.16 - dist * 0.15);
+    const callGamma = bsGamma(spot, K, r, T, callIv);
+    const putGamma = bsGamma(spot, K, r, T, putIv);
+    const callDelta = Math.round(bsDelta(spot, K, r, T, callIv, 'CALL') * 1000) / 1000;
+    const putDelta = Math.round(bsDelta(spot, K, r, T, putIv, 'PUT') * 1000) / 1000;
+    const callPrice = Math.max(0.05, Math.round(bsCallPrice(spot, K, r, T, callIv) * 100) / 100);
+    const putPrice = Math.max(0.05, Math.round(bsPutPrice(spot, K, r, T, putIv) * 100) / 100);
+
+    const callWeight = Math.exp(-Math.pow(dist - 0.012, 2) / 0.0006);
+    const putWeight = Math.exp(-Math.pow(dist + 0.012, 2) / 0.0006);
+    const callOi = Math.max(1, Math.round((callWeight * 120000 + 5000 + (K % (step * 5) === 0 ? 40000 : 0)) / lotSize)) * lotSize;
+    const putOi = Math.max(1, Math.round((putWeight * 110000 + 4000 + (K % (step * 5) === 0 ? 35000 : 0)) / lotSize)) * lotSize;
+
+    const callGex = callGamma * callOi * lotSize;
+    const putGex = -(putGamma * putOi * lotSize);
+    const netGex = callGex + putGex;
+
+    strikes.push({
+      strikePrice: K,
+      callOi,
+      callIv: Math.round(callIv * 10000) / 100,
+      callGamma,
+      callDelta,
+      callPrice,
+      callGex,
+      putOi,
+      putIv: Math.round(putIv * 10000) / 100,
+      putGamma,
+      putDelta,
+      putPrice,
+      putGex,
+      netGex,
+    });
+  }
+
+  return strikes;
 }
 
 export const MOCK_INSTRUMENTS: Instrument[] = [
@@ -62,7 +119,18 @@ export const MOCK_INSTRUMENTS: Instrument[] = [
     },
     updatedAt: new Date().toISOString(),
     isSimulated: true,
-    candles: generate5MinCandles(25142.50, 0.0018, 75, 0.0003),
+    candles: generate5MinCandles(25142.50, 0.0018, 225, 0.0003),
+    lotSize: 25,
+    underlyingScrip: 13,
+    expiry: '2026-10-29',
+    prevSession: {
+      callWall: 25200.00,
+      putWall: 24900.00,
+      gammaFlip: 25050.00,
+      close: 25058.20,
+      sessionDate: 'Prev Day',
+    },
+    strikes: generateMockStrikes(25142.50, 50, 25),
   },
   {
     id: 'bank-nifty',
@@ -92,7 +160,18 @@ export const MOCK_INSTRUMENTS: Instrument[] = [
     },
     updatedAt: new Date(Date.now() - 4000).toISOString(),
     isSimulated: true,
-    candles: generate5MinCandles(51880.20, 0.0022, 75, -0.0002),
+    candles: generate5MinCandles(51880.20, 0.0022, 225, -0.0002),
+    lotSize: 15,
+    underlyingScrip: 25,
+    expiry: '2026-10-29',
+    prevSession: {
+      callWall: 52200.00,
+      putWall: 51500.00,
+      gammaFlip: 51800.00,
+      close: 52025.80,
+      sessionDate: 'Prev Day',
+    },
+    strikes: generateMockStrikes(51880.20, 100, 15),
   },
 
   // --- F&O STOCKS (SUPPORT WATCHLIST) ---
@@ -124,7 +203,17 @@ export const MOCK_INSTRUMENTS: Instrument[] = [
     },
     updatedAt: new Date(Date.now() - 6000).toISOString(),
     isSimulated: true,
-    candles: generate5MinCandles(2748.10, 0.0025, 75, -0.0004),
+    candles: generate5MinCandles(2748.10, 0.0025, 225, -0.0004),
+    lotSize: 250,
+    underlyingScrip: 2885,
+    prevSession: {
+      callWall: 2780.00,
+      putWall: 2720.00,
+      gammaFlip: 2750.00,
+      close: 2760.50,
+      sessionDate: 'Prev Day',
+    },
+    strikes: generateMockStrikes(2748.10, 20, 250),
   },
   {
     id: 'hdfcbank',
@@ -154,7 +243,17 @@ export const MOCK_INSTRUMENTS: Instrument[] = [
     },
     updatedAt: new Date(Date.now() - 9000).toISOString(),
     isSimulated: true,
-    candles: generate5MinCandles(1682.40, 0.002, 75, 0.0001),
+    candles: generate5MinCandles(1682.40, 0.002, 225, 0.0001),
+    lotSize: 550,
+    underlyingScrip: 1333,
+    prevSession: {
+      callWall: 1700.00,
+      putWall: 1660.00,
+      gammaFlip: 1680.00,
+      close: 1679.30,
+      sessionDate: 'Prev Day',
+    },
+    strikes: generateMockStrikes(1682.40, 10, 550),
   },
   {
     id: 'sbin',
@@ -184,7 +283,17 @@ export const MOCK_INSTRUMENTS: Instrument[] = [
     },
     updatedAt: new Date(Date.now() - 12000).toISOString(),
     isSimulated: true,
-    candles: generate5MinCandles(792.80, 0.003, 75, -0.0005),
+    candles: generate5MinCandles(792.80, 0.003, 225, -0.0005),
+    lotSize: 750,
+    underlyingScrip: 3045,
+    prevSession: {
+      callWall: 810.00,
+      putWall: 780.00,
+      gammaFlip: 795.00,
+      close: 798.50,
+      sessionDate: 'Prev Day',
+    },
+    strikes: generateMockStrikes(792.80, 10, 750),
   },
 
   // --- F&O STOCKS (RESISTANCE WATCHLIST) ---
@@ -216,7 +325,17 @@ export const MOCK_INSTRUMENTS: Instrument[] = [
     },
     updatedAt: new Date(Date.now() - 5000).toISOString(),
     isSimulated: true,
-    candles: generate5MinCandles(4188.50, 0.002, 75, 0.0006),
+    candles: generate5MinCandles(4188.50, 0.002, 225, 0.0006),
+    lotSize: 175,
+    underlyingScrip: 11536,
+    prevSession: {
+      callWall: 4220.00,
+      putWall: 4120.00,
+      gammaFlip: 4160.00,
+      close: 4140.30,
+      sessionDate: 'Prev Day',
+    },
+    strikes: generateMockStrikes(4188.50, 50, 175),
   },
   {
     id: 'infy',
@@ -246,7 +365,17 @@ export const MOCK_INSTRUMENTS: Instrument[] = [
     },
     updatedAt: new Date(Date.now() - 7000).toISOString(),
     isSimulated: true,
-    candles: generate5MinCandles(1897.10, 0.0028, 75, 0.0007),
+    candles: generate5MinCandles(1897.10, 0.0028, 225, 0.0007),
+    lotSize: 400,
+    underlyingScrip: 1594,
+    prevSession: {
+      callWall: 1910.00,
+      putWall: 1840.00,
+      gammaFlip: 1870.00,
+      close: 1874.70,
+      sessionDate: 'Prev Day',
+    },
+    strikes: generateMockStrikes(1897.10, 20, 400),
   },
   {
     id: 'icicibank',
@@ -276,7 +405,17 @@ export const MOCK_INSTRUMENTS: Instrument[] = [
     },
     updatedAt: new Date(Date.now() - 3000).toISOString(),
     isSimulated: true,
-    candles: generate5MinCandles(1248.60, 0.002, 75, 0.0005),
+    candles: generate5MinCandles(1248.60, 0.002, 225, 0.0005),
+    lotSize: 700,
+    underlyingScrip: 4963,
+    prevSession: {
+      callWall: 1255.00,
+      putWall: 1215.00,
+      gammaFlip: 1230.00,
+      close: 1234.50,
+      sessionDate: 'Prev Day',
+    },
+    strikes: generateMockStrikes(1248.60, 10, 700),
   },
   {
     id: 'tatamotors',
@@ -306,7 +445,17 @@ export const MOCK_INSTRUMENTS: Instrument[] = [
     },
     updatedAt: new Date(Date.now() - 11000).toISOString(),
     isSimulated: true,
-    candles: generate5MinCandles(918.25, 0.0035, 75, 0.0008),
+    candles: generate5MinCandles(918.25, 0.0035, 225, 0.0008),
+    lotSize: 550,
+    underlyingScrip: 3456,
+    prevSession: {
+      callWall: 925.00,
+      putWall: 885.00,
+      gammaFlip: 900.00,
+      close: 901.45,
+      sessionDate: 'Prev Day',
+    },
+    strikes: generateMockStrikes(918.25, 10, 550),
   },
   {
     id: 'bhartiartl',
@@ -336,6 +485,16 @@ export const MOCK_INSTRUMENTS: Instrument[] = [
     },
     updatedAt: new Date(Date.now() - 15000).toISOString(),
     isSimulated: true,
-    candles: generate5MinCandles(1695.50, 0.0022, 75, 0.0005),
+    candles: generate5MinCandles(1695.50, 0.0022, 225, 0.0005),
+    lotSize: 475,
+    underlyingScrip: 10604,
+    prevSession: {
+      callWall: 1710.00,
+      putWall: 1640.00,
+      gammaFlip: 1675.00,
+      close: 1674.50,
+      sessionDate: 'Prev Day',
+    },
+    strikes: generateMockStrikes(1695.50, 20, 475),
   },
 ];

@@ -178,5 +178,14 @@ export function adaptGexResultToInstrument(
     underlyingScrip: gexResult.underlyingScrip,
     expiry: gexResult.expiry,
     lotSize: gexResult.lotSize,
+    prevSession: quote?.close
+      ? {
+          callWall: 0,
+          putWall: 0,
+          gammaFlip: 0,
+          close: Number(quote.close.toFixed(2)),
+          sessionDate: 'Prev Close',
+        }
+      : undefined,
   };
 }

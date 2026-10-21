@@ -8,6 +8,8 @@ import { InstrumentDetail } from './components/InstrumentDetail';
 import { ApiSettingsModal } from './components/ApiSettingsModal';
 import { LoadingState, ErrorState, EmptyState } from './components/StateViews';
 import { useLiveGexScanner } from './hooks/useLiveGexScanner';
+import { useGexAlerts } from './hooks/useGexAlerts';
+import { AlertsDrawer } from './components/AlertsDrawer';
 import {
   Info,
   ShieldAlert,
@@ -24,6 +26,7 @@ export const App: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const [viewState, setViewState] = useState<ViewState>('NORMAL');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isAlertsOpen, setIsAlertsOpen] = useState(false);
 
   // Live DhanHQ GEX Scanner hook
   const {
@@ -47,6 +50,16 @@ export const App: React.FC = () => {
     }
     return MOCK_INSTRUMENTS;
   }, [isLiveMode, liveInstruments]);
+
+  // Real-time GEX Level Alerting hook
+  const {
+    alerts,
+    unreadCount,
+    soundEnabled,
+    setSoundEnabled,
+    markAllAsRead,
+    clearAlerts,
+  } = useGexAlerts(rawInstruments);
 
   // Keep selected instrument in sync with live updates
   const activeSelectedInstrument = useMemo(() => {
@@ -112,6 +125,11 @@ export const App: React.FC = () => {
         onOpenSettings={() => setIsSettingsOpen(true)}
         onRefreshNow={refreshNow}
         isPolling={isPolling}
+        unreadAlertsCount={unreadCount}
+        onOpenAlerts={() => {
+          setIsAlertsOpen(true);
+          markAllAsRead();
+        }}
       />
 
       <main className="app-main">
@@ -258,6 +276,20 @@ export const App: React.FC = () => {
           if (isLiveMode) {
             refreshNow();
           }
+        }}
+      />
+
+      {/* Real-Time GEX Alerts Drawer */}
+      <AlertsDrawer
+        isOpen={isAlertsOpen}
+        onClose={() => setIsAlertsOpen(false)}
+        alerts={alerts}
+        soundEnabled={soundEnabled}
+        onToggleSound={() => setSoundEnabled(!soundEnabled)}
+        onClearAlerts={clearAlerts}
+        onSelectInstrument={(symbol) => {
+          const match = rawInstruments.find((i) => i.symbol === symbol);
+          if (match) setSelectedInstrument(match);
         }}
       />
     </div>
