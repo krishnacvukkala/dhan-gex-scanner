@@ -39,4 +39,14 @@ describe('InstrumentDetail Component - Stage 6 Quantitative & PC-GEX Additions',
     expect(convBtn).toHaveClass('active');
     expect(screen.queryByTestId('pc-gex-experimental-banner')).not.toBeInTheDocument();
   });
+
+  it('navigates to Tab 5 (ΔOI & Gamma Velocity Matrix)', () => {
+    render(<InstrumentDetail instrument={mockInstrument} onClose={vi.fn()} />);
+
+    const velocityTab = screen.getByTestId('tab-velocity');
+    fireEvent.click(velocityTab);
+
+    expect(screen.getByTestId('oi-velocity-matrix')).toBeInTheDocument();
+    expect(screen.getByText('Net Intraday ΔGEX')).toBeInTheDocument();
+  });
 });

@@ -3035,5 +3035,319 @@ body {
   line-height: 1.4;
 }
 
+/* ==========================================================================
+   STAGE 7: REAL-TIME ΔOI & GAMMA VELOCITY MATRIX STYLES
+   ========================================================================== */
+
+.oi-velocity-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 4px 0;
+}
+
+.oi-velocity-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.velocity-stat-card {
+  background-color: var(--bg-darkest);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.stat-label {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.stat-val {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.stat-val.flow-val {
+  margin-top: 2px;
+}
+
+.stat-sub {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+.buildup-badge {
+  font-size: 0.66rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  display: inline-block;
+  letter-spacing: 0.02em;
+}
+
+.buildup-badge.long-buildup {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.buildup-badge.short-buildup {
+  background: rgba(244, 63, 94, 0.15);
+  color: #fb7185;
+  border: 1px solid rgba(244, 63, 94, 0.4);
+}
+
+.buildup-badge.long-unwinding {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.buildup-badge.short-covering {
+  background: rgba(6, 182, 212, 0.15);
+  color: #22d3ee;
+  border: 1px solid rgba(6, 182, 212, 0.4);
+}
+
+.buildup-badge.neutral-buildup {
+  background: rgba(148, 163, 184, 0.1);
+  color: #94a3b8;
+}
+
+.velocity-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.toolbar-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.toolbar-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.matrix-toggle-group {
+  display: inline-flex;
+  background-color: var(--bg-darkest);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+  gap: 2px;
+}
+
+.matrix-toggle-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.matrix-toggle-btn:hover {
+  color: #fff;
+}
+
+.matrix-toggle-btn.active {
+  background: var(--bg-card);
+  color: var(--cyan);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+/* Dual-Bar Graphic */
+.velocity-bars-graphic {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background-color: var(--bg-darkest);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  max-height: 380px;
+  overflow-y: auto;
+}
+
+.velocity-bar-row {
+  display: flex;
+  align-items: center;
+  height: 24px;
+  gap: 8px;
+}
+
+.velocity-bar-row.atm-strike-row {
+  background: rgba(245, 158, 11, 0.08);
+  border-radius: 3px;
+}
+
+.bar-side {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.bar-side.put-side, .bar-side.gex-left {
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.bar-side.call-side, .bar-side.gex-right {
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.bar-val-lbl {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  min-width: 65px;
+}
+
+.bar-side.put-side .bar-val-lbl {
+  text-align: right;
+}
+
+.bar-side.call-side .bar-val-lbl {
+  text-align: left;
+}
+
+.bar-track {
+  flex: 1;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 2px;
+  overflow: hidden;
+  display: flex;
+}
+
+.bar-track.left-track {
+  justify-content: flex-end;
+}
+
+.bar-track.right-track {
+  justify-content: flex-start;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.put-pos-bar {
+  background: #10b981;
+}
+
+.put-neg-bar {
+  background: #f43f5e;
+}
+
+.call-pos-bar {
+  background: #10b981;
+}
+
+.call-neg-bar {
+  background: #f43f5e;
+}
+
+.strike-center-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #fff;
+  min-width: 75px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+.strike-center-badge.atm {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+/* Granular Audit Table */
+.velocity-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.velocity-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.72rem;
+}
+
+.velocity-table th {
+  background-color: var(--bg-darkest);
+  color: var(--text-muted);
+  font-weight: 600;
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.velocity-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(51, 65, 85, 0.25);
+  color: #e2e8f0;
+}
+
+.velocity-tr:hover td {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.velocity-tr.atm-tr td {
+  background-color: rgba(245, 158, 11, 0.05);
+}
+
+.strike-cell {
+  position: relative;
+}
+
+.atm-pill {
+  font-size: 0.58rem;
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  padding: 1px 4px;
+  border-radius: 2px;
+  margin-left: 4px;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+
 
 

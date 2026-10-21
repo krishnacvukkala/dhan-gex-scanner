@@ -15,14 +15,50 @@ export interface StrikeGexDetail {
   callGamma: number;
   callDelta?: number;
   callPrice?: number;
+  callPrevOi?: number;
+  callChangeOi?: number;
+  callPriceChange?: number;
   callGex: number; // in shares/contracts (positive)
   putOi: number;
   putIv: number;
   putGamma: number;
   putDelta?: number;
   putPrice?: number;
+  putPrevOi?: number;
+  putChangeOi?: number;
+  putPriceChange?: number;
   putGex: number; // in shares/contracts (negative by convention)
   netGex: number; // callGex + putGex
+}
+
+export type BuildUpType =
+  | 'LONG_BUILDUP'
+  | 'SHORT_BUILDUP'
+  | 'LONG_UNWINDING'
+  | 'SHORT_COVERING'
+  | 'NEUTRAL';
+
+export interface StrikeOiVelocityDetail {
+  strikePrice: number;
+  callOi: number;
+  putOi: number;
+  callOiChange: number;
+  putOiChange: number;
+  callBuildUp: BuildUpType;
+  putBuildUp: BuildUpType;
+  callDeltaGexCr: number;
+  putDeltaGexCr: number;
+  netDeltaGexCr: number;
+}
+
+export interface OiVelocityResult {
+  totalCallOiChange: number;
+  totalPutOiChange: number;
+  netIntradayDeltaGexCr: number;
+  dominantFlow: BuildUpType;
+  topCallAccumulationStrike: number;
+  topPutAccumulationStrike: number;
+  strikeDetails: StrikeOiVelocityDetail[];
 }
 
 export interface NearestGexLevelInfo {

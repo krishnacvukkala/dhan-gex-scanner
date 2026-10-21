@@ -165,6 +165,39 @@ Stage 6 delivers advanced quantitative hedging metrics, cross-index benchmarking
 
 ---
 
+---
+
+## Stage 7: Real-Time ΔOI Buildup Matrix & Intraday Gamma Velocity (Completed)
+
+Stage 7 implements high-frequency derivative flow analytics, tracking intraday open interest changes ($\Delta\text{OI}$), institutional participant positioning classification, and gamma velocity ($d\text{GEX}/dt$) injected by today's open interest migration.
+
+### Key Capabilities
+
+- **Institutional Open Interest Buildup Engine (`src/services/gex/oiVelocityEngine.ts`):**
+  - Mathematical classification of call and put strike positioning based on synchronized price and open interest deltas:
+    - $\Delta P > 0, \Delta\text{OI} > 0 \implies$ **Long Build-up** (Aggressive bullish buying)
+    - $\Delta P < 0, \Delta\text{OI} > 0 \implies$ **Short Build-up** (Aggressive bearish writing / resistance creation)
+    - $\Delta P < 0, \Delta\text{OI} < 0 \implies$ **Long Unwinding** (Bulls exiting / support deterioration)
+    - $\Delta P > 0, \Delta\text{OI} < 0 \implies$ **Short Covering** (Short squeeze / resistance capitulation)
+  - Color-coded badges with institutional badges across tables and graphics.
+- **Intraday Gamma Velocity Metric ($d\text{GEX}/dt$):**
+  - Isolates the exact gamma exposure injected or drained purely by today's net new open interest migration:
+    $$\Delta\text{GEX}_{\text{strike}} = \frac{\Gamma \times \Delta\text{OI} \times \text{LotSize} \times \text{Spot}^2 \times 0.01}{10^7} \quad (\text{₹ Cr})$$
+  - Pinpoints whether dealer gamma walls are actively fortifying or breaking down intraday.
+- **Interactive $\Delta\text{OI}$ & Gamma Velocity Matrix (`src/components/OiVelocityMatrix.tsx`):**
+  - Integrated as **Tab 5** inside the `InstrumentDetail` modal with instant switching.
+  - **4 Top KPI Cards:** Total Call $\Delta\text{OI}$, Total Put $\Delta\text{OI}$, Net Flow Velocity (₹ Cr), and Dominant Buildup Regime.
+  - **Dual-Sided Put vs. Call Bar Graphic:** Visualizes Put $\Delta\text{OI}$ on the left and Call $\Delta\text{OI}$ on the right, centered around the strike ladder with ATM marker.
+  - **Metric Mode Switcher:** Toggle bars between **Contracts ($\Delta\text{OI}$)** and **Gamma Velocity ($\Delta\text{GEX}$ ₹ Cr)**.
+  - **Strike Range Filter:** Quick toggles for `ATM ±10`, `ATM ±15`, `ATM ±20`, or `All Strikes`.
+  - **Granular Flow Audit Table:** Strike-by-strike breakdown with Call/Put $\Delta\text{OI}$, LTP Changes ($\Delta P$), Flow Classification badges, and Strike Velocity.
+- **Option Chain Table Integration:**
+  - Integrated intraday $\Delta\text{OI}$ contract counts directly beneath Call OI and Put OI in `OptionChainTable.tsx` formatted with `+`/`-` and green/red cues.
+  - Added `Call_Chg_OI` and `Put_Chg_OI` columns to the downloadable CSV export.
+- **Robust Automated Verification:** 113 automated tests passing across 21 test suites in Vitest with zero failures.
+
+---
+
 ## Getting Started
 
 ### Prerequisites
@@ -201,6 +234,7 @@ pnpm build
 - **Stage 4 (Completed):** Live Dhan option chain polling & in-browser credential configuration, dynamic Strike GEX Profile charts, and dashboard integration.
 - **Stage 5 (Completed):** Multi-day session charting with prior session levels, full Option Chain Table with Greeks & CSV export, Intraday GEX Drift tracking, Real-Time Alerts drawer, and multi-expiry selection.
 - **Stage 6 (Completed):** Net Delta Exposure (DEX) & 1% re-hedging matrix, Cross-Index Institutional Gamma Radar & Heatmap, Segregated Experimental PC-GEX Model (Rule 11), and Daily Session Recap & Audit Journal.
+- **Stage 7 (Completed):** Real-Time $\Delta\text{OI}$ Buildup Matrix, Intraday Gamma Velocity ($d\text{GEX}/dt$), dual-sided Put/Call bar graphic, and Option Chain flow indicators.
 
 
 

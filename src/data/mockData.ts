@@ -64,6 +64,11 @@ function generateMockStrikes(
     const callOi = Math.max(1, Math.round((callWeight * 120000 + 5000 + (K % (step * 5) === 0 ? 40000 : 0)) / lotSize)) * lotSize;
     const putOi = Math.max(1, Math.round((putWeight * 110000 + 4000 + (K % (step * 5) === 0 ? 35000 : 0)) / lotSize)) * lotSize;
 
+    const callChangeOi = Math.round((Math.sin(i * 0.8) * 0.25 * callOi) / lotSize) * lotSize;
+    const putChangeOi = Math.round((Math.cos(i * 0.8) * 0.22 * putOi) / lotSize) * lotSize;
+    const callPriceChange = Math.round((Math.sin(i) * 15 + (dist < 0 ? 12 : -8)) * 10) / 10;
+    const putPriceChange = Math.round((-Math.sin(i) * 15 + (dist > 0 ? 12 : -8)) * 10) / 10;
+
     const callGex = callGamma * callOi * lotSize;
     const putGex = -(putGamma * putOi * lotSize);
     const netGex = callGex + putGex;
@@ -75,12 +80,16 @@ function generateMockStrikes(
       callGamma,
       callDelta,
       callPrice,
+      callChangeOi,
+      callPriceChange,
       callGex,
       putOi,
       putIv: Math.round(putIv * 10000) / 100,
       putGamma,
       putDelta,
       putPrice,
+      putChangeOi,
+      putPriceChange,
       putGex,
       netGex,
     });

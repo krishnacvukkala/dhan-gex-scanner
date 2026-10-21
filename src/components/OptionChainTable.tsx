@@ -78,12 +78,14 @@ export const OptionChainTable: React.FC<OptionChainTableProps> = ({
     const headers = [
       'Strike',
       'Call_OI',
+      'Call_Chg_OI',
       'Call_LTP',
       'Call_IV_Pct',
       'Call_Delta',
       'Call_Gamma',
       'Call_GEX_Cr',
       'Put_OI',
+      'Put_Chg_OI',
       'Put_LTP',
       'Put_IV_Pct',
       'Put_Delta',
@@ -108,12 +110,14 @@ export const OptionChainTable: React.FC<OptionChainTableProps> = ({
       return [
         s.strikePrice,
         s.callOi,
+        s.callChangeOi ?? 0,
         s.callPrice ?? '',
         s.callIv.toFixed(2),
         s.callDelta !== undefined ? s.callDelta.toFixed(3) : '',
         s.callGamma.toExponential(4),
         callGexCr,
         s.putOi,
+        s.putChangeOi ?? 0,
         s.putPrice ?? '',
         s.putIv.toFixed(2),
         s.putDelta !== undefined ? s.putDelta.toFixed(3) : '',
@@ -274,7 +278,18 @@ export const OptionChainTable: React.FC<OptionChainTableProps> = ({
                 <tr key={s.strikePrice} className={`chain-data-row ${rowClass}`}>
                   {/* Call OI */}
                   <td className="text-right text-slate-300">
-                    {s.callOi.toLocaleString('en-IN')}
+                    <div>{s.callOi.toLocaleString('en-IN')}</div>
+                    {s.callChangeOi !== undefined && s.callChangeOi !== 0 && (
+                      <div
+                        className={`text-[10px] font-mono ${
+                          s.callChangeOi > 0 ? 'text-emerald-400' : 'text-rose-400'
+                        }`}
+                        title="Intraday Change in Call OI"
+                      >
+                        {s.callChangeOi > 0 ? '+' : ''}
+                        {s.callChangeOi.toLocaleString('en-IN')}
+                      </div>
+                    )}
                   </td>
 
                   {/* Call LTP */}
@@ -354,7 +369,18 @@ export const OptionChainTable: React.FC<OptionChainTableProps> = ({
 
                   {/* Put OI */}
                   <td className="text-left text-slate-300">
-                    {s.putOi.toLocaleString('en-IN')}
+                    <div>{s.putOi.toLocaleString('en-IN')}</div>
+                    {s.putChangeOi !== undefined && s.putChangeOi !== 0 && (
+                      <div
+                        className={`text-[10px] font-mono ${
+                          s.putChangeOi > 0 ? 'text-emerald-400' : 'text-rose-400'
+                        }`}
+                        title="Intraday Change in Put OI"
+                      >
+                        {s.putChangeOi > 0 ? '+' : ''}
+                        {s.putChangeOi.toLocaleString('en-IN')}
+                      </div>
+                    )}
                   </td>
 
                   {/* Net GEX */}

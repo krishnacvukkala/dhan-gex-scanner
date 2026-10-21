@@ -6,6 +6,7 @@ import { GexDriftChart } from './GexDriftChart';
 import { useGexDriftTracker } from '../hooks/useGexDriftTracker';
 import { calculateDexAndHedgingFlow } from '../services/gex/dexEngine';
 import { calculatePcGex } from '../services/gex/pcGexEngine';
+import { OiVelocityMatrix } from './OiVelocityMatrix';
 import {
   X,
   AlertTriangle,
@@ -21,6 +22,7 @@ import {
   FileSpreadsheet,
   Calendar,
   Gauge,
+  Flame,
 } from 'lucide-react';
 
 interface InstrumentDetailProps {
@@ -32,7 +34,7 @@ export const InstrumentDetail: React.FC<InstrumentDetailProps> = ({
   instrument,
   onClose,
 }) => {
-  const [activeTab, setActiveTab] = useState<'chart' | 'strikes' | 'chain' | 'drift'>('chart');
+  const [activeTab, setActiveTab] = useState<'chart' | 'strikes' | 'chain' | 'drift' | 'velocity'>('chart');
   const [selectedExpiry, setSelectedExpiry] = useState<string>('0DTE');
   const [calculationModel, setCalculationModel] = useState<'CONVENTIONAL' | 'PC_GEX'>('CONVENTIONAL');
   const isPositive = instrument.change >= 0;
@@ -390,6 +392,17 @@ export const InstrumentDetail: React.FC<InstrumentDetailProps> = ({
             <TrendingUp size={14} />
             <span>Intraday GEX Drift ({driftHistory.length} pts)</span>
           </button>
+          {strikes.length > 0 && (
+            <button
+              type="button"
+              className={`detail-tab-btn ${activeTab === 'velocity' ? 'active' : ''}`}
+              onClick={() => setActiveTab('velocity')}
+              data-testid="tab-velocity"
+            >
+              <Flame size={14} className="text-amber" />
+              <span>ΔOI & Gamma Velocity</span>
+            </button>
+          )}
         </div>
 
         {/* Tab 1: Chart View */}
@@ -517,6 +530,16 @@ export const InstrumentDetail: React.FC<InstrumentDetailProps> = ({
         {activeTab === 'drift' && (
           <GexDriftChart
             history={driftHistory}
+            symbol={instrument.symbol}
+          />
+        )}
+
+        {/* Tab 5: Real-Time ΔOI & Gamma Velocity Matrix */}
+        {activeTab === 'velocity' && strikes.length > 0 && (
+          <OiVelocityMatrix
+            strikes={strikes}
+            spotPrice={instrument.lastPrice}
+            lotSize={instrument.lotSize || 25}
             symbol={instrument.symbol}
           />
         )}
