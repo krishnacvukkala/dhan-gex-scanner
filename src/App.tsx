@@ -5,22 +5,61 @@ import { Navbar } from './components/Navbar';
 import { FilterBar } from './components/FilterBar';
 import { WatchlistTable } from './components/WatchlistTable';
 import { InstrumentDetail } from './components/InstrumentDetail';
+import { ApiSettingsModal } from './components/ApiSettingsModal';
 import { LoadingState, ErrorState, EmptyState } from './components/StateViews';
-import { Info, ShieldAlert } from 'lucide-react';
+import { useLiveGexScanner } from './hooks/useLiveGexScanner';
+import {
+  Info,
+  ShieldAlert,
+  Radio,
+  Clock,
+  Layers,
+  ExternalLink,
+} from 'lucide-react';
 
 export const App: React.FC = () => {
-  const [instruments] = useState<Instrument[]>(MOCK_INSTRUMENTS);
   const [selectedInstrument, setSelectedInstrument] = useState<Instrument | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('ALL');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const [viewState, setViewState] = useState<ViewState>('NORMAL');
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  // Live DhanHQ GEX Scanner hook
+  const {
+    isLiveMode,
+    setIsLiveMode,
+    connectionStatus,
+    liveInstruments,
+    lastSyncTime,
+    isPolling,
+    pollIntervalMs,
+    setPollIntervalMs,
+    errorMessage,
+    refreshNow,
+    expiryDate,
+  } = useLiveGexScanner();
+
+  // Active dataset depends on mode
+  const rawInstruments = useMemo(() => {
+    if (isLiveMode) {
+      return liveInstruments.length > 0 ? liveInstruments : [];
+    }
+    return MOCK_INSTRUMENTS;
+  }, [isLiveMode, liveInstruments]);
+
+  // Keep selected instrument in sync with live updates
+  const activeSelectedInstrument = useMemo(() => {
+    if (!selectedInstrument) return null;
+    const found = rawInstruments.find((i) => i.id === selectedInstrument.id || i.symbol === selectedInstrument.symbol);
+    return found || selectedInstrument;
+  }, [rawInstruments, selectedInstrument]);
 
   // Filtered dataset
   const filteredInstruments = useMemo(() => {
     if (viewState === 'EMPTY') return [];
 
-    return instruments.filter((inst) => {
+    return rawInstruments.filter((inst) => {
       // Search filter
       const matchesSearch =
         searchQuery.trim() === '' ||
@@ -36,7 +75,7 @@ export const App: React.FC = () => {
 
       return matchesSearch && matchesType && matchesStatus;
     });
-  }, [instruments, searchQuery, typeFilter, statusFilter, viewState]);
+  }, [rawInstruments, searchQuery, typeFilter, statusFilter, viewState]);
 
   // Support vs Resistance splitting
   const supportWatchlist = useMemo(() => {
@@ -62,21 +101,83 @@ export const App: React.FC = () => {
         onSearchChange={setSearchQuery}
         viewState={viewState}
         onViewStateChange={setViewState}
+        isLiveMode={isLiveMode}
+        onToggleLiveMode={(enableLive) => {
+          setIsLiveMode(enableLive);
+          if (enableLive && connectionStatus === 'DISCONNECTED') {
+            setIsSettingsOpen(true);
+          }
+        }}
+        connectionStatus={connectionStatus}
+        onOpenSettings={() => setIsSettingsOpen(true)}
+        onRefreshNow={refreshNow}
+        isPolling={isPolling}
       />
 
       <main className="app-main">
-        {/* Stage 1 Mock Data Disclaimer Banner */}
-        <section className="simulation-banner" data-testid="simulated-banner">
-          <div className="banner-content">
-            <ShieldAlert size={18} className="banner-icon" />
-            <div className="banner-text">
-              <strong>Stage 1 Prototype: Simulated GEX & Mock Candles Active.</strong>
-              <span>
-                All Gamma Exposure levels, strike pegs, and 5-minute candlestick charts are currently generated using simulated mock models. No live Dhan API connection or automated order execution is active.
-              </span>
+        {/* Banner: Simulated vs Live Mode */}
+        {isLiveMode ? (
+          <section
+            className={`live-status-banner ${
+              connectionStatus === 'ERROR'
+                ? 'banner-error'
+                : connectionStatus === 'RATE_LIMITED'
+                ? 'banner-warning'
+                : 'banner-connected'
+            }`}
+            data-testid="live-status-banner"
+          >
+            <div className="banner-content">
+              <Radio size={18} className="banner-icon pulse-icon" />
+              <div className="banner-text">
+                <div className="live-banner-headline">
+                  <strong>Live DhanHQ Option Chain Feed Active.</strong>
+                  <span className="live-badge-detail font-mono">
+                    Expiry: {expiryDate}
+                  </span>
+                  {lastSyncTime && (
+                    <span className="live-badge-detail font-mono">
+                      <Clock size={11} className="inline-icon" /> Last Sync: {lastSyncTime.toLocaleTimeString()}
+                    </span>
+                  )}
+                  {liveInstruments.length > 0 && (
+                    <span className="live-badge-detail font-mono">
+                      <Layers size={11} className="inline-icon" /> {liveInstruments.length} Symbols Scanned
+                    </span>
+                  )}
+                </div>
+                <span>
+                  {errorMessage ? (
+                    <span className="banner-error-text">
+                      {errorMessage}{' '}
+                      <button
+                        type="button"
+                        className="banner-link-btn"
+                        onClick={() => setIsSettingsOpen(true)}
+                      >
+                        Open API Settings <ExternalLink size={11} />
+                      </button>
+                    </span>
+                  ) : (
+                    'Real-time Black-Scholes gamma exposure and structural levels calculated from DhanHQ market data.'
+                  )}
+                </span>
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        ) : (
+          <section className="simulation-banner" data-testid="simulated-banner">
+            <div className="banner-content">
+              <ShieldAlert size={18} className="banner-icon" />
+              <div className="banner-text">
+                <strong>Simulated Data Mode: Synthetic GEX & Mock Candles Active.</strong>
+                <span>
+                  All Gamma Exposure levels, strike pegs, and 5-minute candlestick charts are currently generated using simulated mock models. Switch to &apos;Live Dhan&apos; in navbar to fetch live Indian market option chains.
+                </span>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Filter Bar */}
         <FilterBar
@@ -94,6 +195,8 @@ export const App: React.FC = () => {
           <LoadingState />
         ) : viewState === 'ERROR' ? (
           <ErrorState onRetry={() => setViewState('NORMAL')} />
+        ) : isLiveMode && liveInstruments.length === 0 && connectionStatus === 'CONNECTING' ? (
+          <LoadingState />
         ) : filteredInstruments.length === 0 ? (
           <EmptyState
             searchQuery={searchQuery}
@@ -106,7 +209,7 @@ export const App: React.FC = () => {
               type="SUPPORT"
               title="Support Watchlist (Put Wall / Flip Support)"
               instruments={supportWatchlist}
-              selectedId={selectedInstrument?.id ?? null}
+              selectedId={activeSelectedInstrument?.id ?? null}
               onSelect={(inst) => setSelectedInstrument(inst)}
             />
 
@@ -115,7 +218,7 @@ export const App: React.FC = () => {
               type="RESISTANCE"
               title="Resistance Watchlist (Call Wall / Flip Resistance)"
               instruments={resistanceWatchlist}
-              selectedId={selectedInstrument?.id ?? null}
+              selectedId={activeSelectedInstrument?.id ?? null}
               onSelect={(inst) => setSelectedInstrument(inst)}
             />
           </div>
@@ -138,14 +241,28 @@ export const App: React.FC = () => {
       </main>
 
       {/* Selected Instrument Detail Modal */}
-      {selectedInstrument && (
+      {activeSelectedInstrument && (
         <InstrumentDetail
-          instrument={selectedInstrument}
+          instrument={activeSelectedInstrument}
           onClose={() => setSelectedInstrument(null)}
         />
       )}
+
+      {/* DhanHQ API Credentials & Configuration Modal */}
+      <ApiSettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        pollIntervalMs={pollIntervalMs}
+        onPollIntervalChange={setPollIntervalMs}
+        onCredentialsSaved={() => {
+          if (isLiveMode) {
+            refreshNow();
+          }
+        }}
+      />
     </div>
   );
 };
 
 export default App;
+

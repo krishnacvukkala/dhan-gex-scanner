@@ -73,6 +73,26 @@ Stage 3 implements the pure, deterministic mathematical core for calculating con
 
 ---
 
+## Stage 4: Live DhanHQ Integration & Dashboard Wiring (Completed)
+
+Stage 4 integrates the Stage 2 DhanHQ read-only API client and Stage 3 Conventional GEX Engine into the interactive dashboard, enabling seamless live polling and in-browser credential management.
+
+### Key Capabilities
+- **Simulated vs. Live Mode Switching:** Instant toggle between simulated demonstration mode and real-time live DhanHQ data.
+- **Client-Side Credential Security (Rules 6 & 7):**
+  - In-browser settings modal for DhanHQ Client ID and Access Token (JWT).
+  - Configurable storage persistence (`sessionStorage` for ephemeral security vs. `localStorage`).
+  - Diagnostic token masking (`eyJ...****`) and on-demand connectivity ping test.
+- **Security Master & Index Registry:** Pre-configured mappings for Indian indices (`NIFTY 50`, `BANKNIFTY`, `FINNIFTY`, `MIDCPNIFTY`, `SENSEX`) with official security IDs, lot sizes, and strike step sizes.
+- **Dynamic Strike GEX Profile Chart:** Strike-by-strike Gamma Exposure bar visualization (Call GEX, Put GEX, Net GEX) with Call Wall, Put Wall, and Gamma Flip benchmark lines alongside the candlestick price chart.
+- **Live GEX Polling Engine (`useLiveGexScanner`):**
+  - Rate-limited sequential polling respecting DhanHQ API quotas.
+  - Automatic visibility throttling (pauses when browser tab is backgrounded).
+  - Live data freshness timestamps and manual on-demand refresh.
+- **Comprehensive Test Coverage:** 77 total tests in repository across 11 test suites covering credential management, instrument registry, live adapter, API settings modal, and dashboard interactions.
+
+---
+
 ## Chart Library Evaluation & Choice
 
 ### Chosen: **TradingView Lightweight Charts (`lightweight-charts`)**
@@ -124,6 +144,7 @@ pnpm build
 - **Stage 1 (Completed):** Interactive dark-mode dashboard with mock data, 5-min candlestick charts, GEX overlays, and automated UI test coverage.
 - **Stage 2 (Completed):** DhanHQ API v2 read-only client with rate limiting, exponential backoff, option chain normalization, and test suite.
 - **Stage 3 (Completed):** Core Conventional GEX Calculation Engine (Black-Scholes d1/d2, Gamma $\Gamma$, theoretical IV solver, Net GEX per strike, Call Wall, Put Wall, Gamma Flip, Dealer Bias).
-- **Stage 4 (Next):** Live Dhan option chain polling & WebSocket feed integration into the interactive dashboard with live GEX analytics.
+- **Stage 4 (Completed):** Live Dhan option chain polling & in-browser credential configuration, dynamic Strike GEX Profile charts, and dashboard integration.
+- **Stage 5 (Next):** Intraday GEX level drift tracking, strike-level tabular analysis with CSV export, and breach/pin alert notifications.
 
 

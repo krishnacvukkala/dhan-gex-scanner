@@ -51,9 +51,20 @@ export interface Instrument {
   dealerBias: 'LONG_GAMMA' | 'SHORT_GAMMA' | 'NEUTRAL';
   nearestGex: NearestGexInfo;
   updatedAt: string;
-  isSimulated: true;
+  isSimulated: boolean;
   candles: CandleData[];
+  strikes?: import('../services/gex/types').StrikeGexDetail[];
+  underlyingScrip?: number;
+  expiry?: string;
+  lotSize?: number;
 }
+
+export type ConnectionStatus =
+  | 'DISCONNECTED'
+  | 'CONNECTING'
+  | 'CONNECTED'
+  | 'RATE_LIMITED'
+  | 'ERROR';
 
 export type ViewState = 'NORMAL' | 'LOADING' | 'ERROR' | 'EMPTY';
 export type TypeFilter = 'ALL' | 'INDEX' | 'STOCK';

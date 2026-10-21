@@ -127,4 +127,41 @@ describe('Dhan GEX Scanner - Stage 1 Frontend Dashboard', () => {
 
     expect(screen.getByTestId('watchlists-layout')).toBeInTheDocument();
   });
+
+  it('opens API settings modal when clicking settings gear icon in navbar', () => {
+    render(<App />);
+
+    const settingsBtn = screen.getByTestId('open-api-settings-btn');
+    fireEvent.click(settingsBtn);
+
+    expect(screen.getByTestId('api-settings-modal')).toBeInTheDocument();
+
+    const closeBtn = screen.getByTestId('close-settings-btn');
+    fireEvent.click(closeBtn);
+
+    expect(screen.queryByTestId('api-settings-modal')).not.toBeInTheDocument();
+  });
+
+  it('switches between Simulated Mode and Live Dhan Mode via Mode Switcher', () => {
+    render(<App />);
+
+    // Initially simulated
+    expect(screen.getByTestId('simulated-banner')).toBeInTheDocument();
+    expect(screen.getByTestId('mode-btn-simulated')).toHaveClass('active');
+
+    // Click Live Dhan button
+    const liveBtn = screen.getByTestId('mode-btn-live');
+    fireEvent.click(liveBtn);
+
+    // Live banner should be displayed
+    expect(screen.getByTestId('live-status-banner')).toBeInTheDocument();
+    expect(screen.getByTestId('connection-status-badge')).toBeInTheDocument();
+    expect(screen.queryByTestId('simulated-banner')).not.toBeInTheDocument();
+
+    // Click back to Simulated
+    const simBtn = screen.getByTestId('mode-btn-simulated');
+    fireEvent.click(simBtn);
+
+    expect(screen.getByTestId('simulated-banner')).toBeInTheDocument();
+  });
 });
