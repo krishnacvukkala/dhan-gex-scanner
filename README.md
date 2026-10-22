@@ -198,6 +198,36 @@ Stage 7 implements high-frequency derivative flow analytics, tracking intraday o
 
 ---
 
+## Stage 8: 0DTE Expiry Pin Probability & Magnetic Strike Forecaster (Completed)
+
+Stage 8 implements quantitative expiration day pinning analytics and risk-neutral probability distributions for Indian index and derivative contracts.
+
+### Key Capabilities
+
+- **Institutional Max Pain Engine (`src/services/gex/pinProbabilityEngine.ts`):**
+  - Evaluates cumulative dealer financial payout across all candidate strikes:
+    $$\text{Dealer Loss}(K_j) = \sum_{i} \left[ \max(0, K_j - K_i) \times \text{Call OI}_i + \max(0, K_i - K_j) \times \text{Put OI}_i \right] \times \text{LotSize}$$
+  - Determines exact Max Pain level (dealer loss minimization) in ₹ Cr and proximity to current spot price.
+- **Risk-Neutral Expiry Price Probability Density:**
+  - Implements log-normal strike probability integration across strike slices $[K - \frac{\Delta K}{2}, K + \frac{\Delta K}{2}]$ targeting 15:30 IST:
+    $$P(K) = \Phi(d_2(K_1)) - \Phi(d_2(K_2))$$
+  - Normalized across all option strikes to ensure $\sum P(K) = 100\%$.
+- **Composite Strike Pin Likelihood & Magnetic Score:**
+  - Multi-factor model weighting risk-neutral density (45%), absolute GEX concentration (35%), and Max Pain proximity (20%).
+  - Pin Confidence Index dynamically categorized into `HIGH` (tight pinning corridor), `MODERATE`, or `DISPERSED` (trend/breakout regime).
+- **Dealer Gravity Vector / Net Pin Pull:**
+  - Quantifies whether dealer delta-neutral inventory exerts an upward or downward gravitational pull on spot price:
+    - Direction: `BULLISH_PULL` ($\uparrow$), `BEARISH_PULL` ($\downarrow$), or `PINNED` ($\pm 20\%$ corridor anchor).
+    - Magnitude: Target Strike, distance (pts / %), and dealer pull force in ₹ Cr.
+- **Interactive Tab 6 (`PinProbabilityForecaster.tsx`):**
+  - **4 Top KPI Cards:** Dominant Pin Magnet, Max Pain Level, Dealer Gravity Vector, and Pin Confidence Index.
+  - **Expiry Horizon Simulator:** Interactive scenario switcher for `Live/Current`, `2h to Expiry`, `45m to Expiry`, and `15m Pin Convergence`.
+  - **Visual Probability Density & Magnet Curve:** Strike bar graphic centered at Spot with visual benchmark tags for Pin Magnet, Max Pain, ATM, Call Wall, and Put Wall.
+  - **Granular Audit Table & CSV Export:** Strike-by-strike breakdown with Pin Probability %, Cumulative Prob %, GEX Concentration %, Dealer Loss (₹ Cr), Composite Pin Score, and one-click timestamped CSV download.
+- **Robust Automated Verification:** 124 automated tests passing across 23 test suites in Vitest with 100% pass rate.
+
+---
+
 ## Getting Started
 
 ### Prerequisites
@@ -235,6 +265,8 @@ pnpm build
 - **Stage 5 (Completed):** Multi-day session charting with prior session levels, full Option Chain Table with Greeks & CSV export, Intraday GEX Drift tracking, Real-Time Alerts drawer, and multi-expiry selection.
 - **Stage 6 (Completed):** Net Delta Exposure (DEX) & 1% re-hedging matrix, Cross-Index Institutional Gamma Radar & Heatmap, Segregated Experimental PC-GEX Model (Rule 11), and Daily Session Recap & Audit Journal.
 - **Stage 7 (Completed):** Real-Time $\Delta\text{OI}$ Buildup Matrix, Intraday Gamma Velocity ($d\text{GEX}/dt$), dual-sided Put/Call bar graphic, and Option Chain flow indicators.
+- **Stage 8 (Completed):** 0DTE Expiry Pin Probability & Magnetic Strike Forecaster, Max Pain loss minimization, Risk-Neutral Expiry Density, Dealer Gravity Vector, and multi-horizon convergence simulator.
+
 
 
 

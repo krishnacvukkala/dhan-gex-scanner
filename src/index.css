@@ -3348,6 +3348,404 @@ body {
   font-weight: 700;
 }
 
+/* ==========================================================================
+   Stage 8: 0DTE Expiry Pin Probability & Magnetic Strike Forecaster
+   ========================================================================== */
+
+.pin-forecaster-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 18px;
+}
+
+/* Toolbar */
+.pin-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background-color: var(--bg-darker);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+}
+
+.pin-toolbar-left,
+.pin-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.scenario-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.scenario-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.scenario-btn {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.scenario-btn:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
+
+.scenario-btn.active {
+  background-color: rgba(168, 85, 247, 0.2);
+  border-color: #a855f7;
+  color: #c084fc;
+  font-weight: 600;
+}
+
+/* KPI Cards Grid */
+.pin-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+}
+
+.pin-stat-card {
+  background-color: var(--bg-darker);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pin-stat-card.primary-magnet {
+  border-color: rgba(168, 85, 247, 0.4);
+  background: linear-gradient(145deg, rgba(168, 85, 247, 0.08) 0%, var(--bg-darker) 100%);
+}
+
+.stat-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.stat-card-header .header-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stat-card-value {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.stat-card-value .distance-pct {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.stat-card-subtext {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stat-separator {
+  color: var(--border-subtle);
+}
+
+/* Badges */
+.badge-purple {
+  background: rgba(168, 85, 247, 0.2);
+  border: 1px solid rgba(168, 85, 247, 0.5);
+  color: #c084fc;
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 3px;
+  letter-spacing: 0.04em;
+}
+
+.badge-bullish {
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(16, 185, 129, 0.5);
+  color: #34d399;
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.badge-bearish {
+  background: rgba(244, 63, 94, 0.2);
+  border: 1px solid rgba(244, 63, 94, 0.5);
+  color: #fb7185;
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.badge-pinned {
+  background: rgba(168, 85, 247, 0.2);
+  border: 1px solid rgba(168, 85, 247, 0.5);
+  color: #c084fc;
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.text-purple {
+  color: #c084fc;
+}
+
+/* Pin Probability Density Chart */
+.pin-chart-container {
+  background-color: var(--bg-darker);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pin-bars-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pin-bar-row {
+  display: grid;
+  grid-template-columns: 180px 1fr 90px 110px;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  transition: background-color 0.15s ease;
+}
+
+.pin-bar-row:hover {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+.pin-bar-row.dominant-row {
+  background-color: rgba(168, 85, 247, 0.1);
+  border-left: 2px solid #a855f7;
+}
+
+.pin-bar-row.atm-row {
+  background-color: rgba(245, 158, 11, 0.06);
+}
+
+.pin-strike-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #f1f5f9;
+}
+
+.pin-strike-tags {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.mini-tag {
+  font-size: 0.58rem;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 2px;
+  text-transform: uppercase;
+}
+
+.pin-tag {
+  background: rgba(168, 85, 247, 0.3);
+  color: #d8b4fe;
+  border: 1px solid rgba(168, 85, 247, 0.6);
+}
+
+.maxpain-tag {
+  background: rgba(245, 158, 11, 0.25);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.5);
+}
+
+.atm-tag {
+  background: rgba(59, 130, 246, 0.25);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.5);
+}
+
+.call-tag {
+  background: rgba(244, 63, 94, 0.2);
+  color: #fb7185;
+}
+
+.put-tag {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+}
+
+.pin-track-cell {
+  background-color: rgba(15, 23, 42, 0.6);
+  border-radius: 3px;
+  height: 18px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid rgba(51, 65, 85, 0.3);
+}
+
+.pin-fill-bar {
+  height: 100%;
+  background: linear-gradient(90deg, rgba(168, 85, 247, 0.6) 0%, rgba(192, 132, 252, 0.85) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 6px;
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pin-fill-bar.dominant-bar {
+  background: linear-gradient(90deg, rgba(168, 85, 247, 0.9) 0%, rgba(216, 180, 254, 1) 100%);
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
+}
+
+.pin-bar-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.pin-metric-cell {
+  font-size: 0.72rem;
+  text-align: right;
+}
+
+/* Detailed Audit Table */
+.pin-table-wrapper {
+  background-color: var(--bg-darker);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pin-audit-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.72rem;
+}
+
+.pin-audit-table th {
+  background-color: var(--bg-darkest);
+  color: var(--text-muted);
+  font-weight: 600;
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.pin-audit-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(51, 65, 85, 0.25);
+  color: #e2e8f0;
+}
+
+.pin-audit-table tr.row-dominant td {
+  background-color: rgba(168, 85, 247, 0.08);
+}
+
+.pin-audit-table tr.row-maxpain td {
+  background-color: rgba(245, 158, 11, 0.05);
+}
+
+.prob-progress-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.prob-progress-bar {
+  height: 6px;
+  background-color: #a855f7;
+  border-radius: 3px;
+  max-width: 60px;
+}
+
+/* Explanatory Card */
+.pin-explanatory-card {
+  background-color: rgba(15, 23, 42, 0.5);
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid #3b82f6;
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.card-info-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #93c5fd;
+}
+
+.card-info-text {
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+
 
 
 

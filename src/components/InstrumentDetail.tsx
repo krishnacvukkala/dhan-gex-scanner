@@ -7,6 +7,7 @@ import { useGexDriftTracker } from '../hooks/useGexDriftTracker';
 import { calculateDexAndHedgingFlow } from '../services/gex/dexEngine';
 import { calculatePcGex } from '../services/gex/pcGexEngine';
 import { OiVelocityMatrix } from './OiVelocityMatrix';
+import { PinProbabilityForecaster } from './PinProbabilityForecaster';
 import {
   X,
   AlertTriangle,
@@ -23,6 +24,7 @@ import {
   Calendar,
   Gauge,
   Flame,
+  Target,
 } from 'lucide-react';
 
 interface InstrumentDetailProps {
@@ -34,7 +36,7 @@ export const InstrumentDetail: React.FC<InstrumentDetailProps> = ({
   instrument,
   onClose,
 }) => {
-  const [activeTab, setActiveTab] = useState<'chart' | 'strikes' | 'chain' | 'drift' | 'velocity'>('chart');
+  const [activeTab, setActiveTab] = useState<'chart' | 'strikes' | 'chain' | 'drift' | 'velocity' | 'pin'>('chart');
   const [selectedExpiry, setSelectedExpiry] = useState<string>('0DTE');
   const [calculationModel, setCalculationModel] = useState<'CONVENTIONAL' | 'PC_GEX'>('CONVENTIONAL');
   const isPositive = instrument.change >= 0;
@@ -403,6 +405,17 @@ export const InstrumentDetail: React.FC<InstrumentDetailProps> = ({
               <span>ΔOI & Gamma Velocity</span>
             </button>
           )}
+          {strikes.length > 0 && (
+            <button
+              type="button"
+              className={`detail-tab-btn ${activeTab === 'pin' ? 'active' : ''}`}
+              onClick={() => setActiveTab('pin')}
+              data-testid="tab-pin"
+            >
+              <Target size={14} className="text-purple" />
+              <span>0DTE Pin Forecaster</span>
+            </button>
+          )}
         </div>
 
         {/* Tab 1: Chart View */}
@@ -541,6 +554,20 @@ export const InstrumentDetail: React.FC<InstrumentDetailProps> = ({
             spotPrice={instrument.lastPrice}
             lotSize={instrument.lotSize || 25}
             symbol={instrument.symbol}
+          />
+        )}
+
+        {/* Tab 6: 0DTE Expiry Pin Probability & Magnetic Strike Forecaster */}
+        {activeTab === 'pin' && strikes.length > 0 && (
+          <PinProbabilityForecaster
+            symbol={instrument.symbol}
+            spotPrice={instrument.lastPrice}
+            strikes={strikes}
+            callWall={effectiveCallWall}
+            putWall={effectivePutWall}
+            gammaFlip={effectiveGammaFlip}
+            timeToExpiryYears={0.0005}
+            lotSize={instrument.lotSize || 25}
           />
         )}
 

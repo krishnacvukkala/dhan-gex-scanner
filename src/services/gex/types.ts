@@ -92,3 +92,35 @@ export interface GexEngineOptions {
   symbol?: string;             // Underlying symbol name (e.g. 'NIFTY')
   currentDate?: Date;          // Reference calculation date/time (default: current system time)
 }
+
+export type GravityDirection = 'BULLISH_PULL' | 'BEARISH_PULL' | 'PINNED';
+export type PinConfidence = 'HIGH' | 'MODERATE' | 'DISPERSED';
+
+export interface StrikePinDetail {
+  strike: number;
+  pinProbabilityPct: number;
+  cumulativeProbPct: number;
+  gexConcentrationPct: number;
+  dealerLossCr: number;
+  compositePinScore: number;
+  isDominantPin: boolean;
+  isMaxPain: boolean;
+}
+
+export interface PinGravityVector {
+  targetStrike: number;
+  distancePts: number;
+  distancePct: number;
+  direction: GravityDirection;
+  pullForceCr: number;
+}
+
+export interface PinForecastResult {
+  dominantPinStrike: number;
+  maxPainStrike: number;
+  pinConfidence: PinConfidence;
+  gravityVector: PinGravityVector;
+  strikes: StrikePinDetail[];
+  simulatedExpiryMinutes?: number;
+}
+

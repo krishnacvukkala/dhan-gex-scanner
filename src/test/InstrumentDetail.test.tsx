@@ -49,4 +49,16 @@ describe('InstrumentDetail Component - Stage 6 Quantitative & PC-GEX Additions',
     expect(screen.getByTestId('oi-velocity-matrix')).toBeInTheDocument();
     expect(screen.getByText('Net Intraday ΔGEX')).toBeInTheDocument();
   });
+
+  it('navigates to Tab 6 (0DTE Pin Forecaster)', () => {
+    render(<InstrumentDetail instrument={mockInstrument} onClose={vi.fn()} />);
+
+    const pinTab = screen.getByTestId('tab-pin');
+    fireEvent.click(pinTab);
+
+    expect(screen.getByTestId('pin-probability-forecaster')).toBeInTheDocument();
+    expect(screen.getAllByText('Dominant Pin Magnet').length).toBeGreaterThan(0);
+    expect(screen.getByText('Max Pain Level')).toBeInTheDocument();
+  });
 });
+
