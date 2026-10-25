@@ -266,7 +266,34 @@ pnpm build
 - **Stage 6 (Completed):** Net Delta Exposure (DEX) & 1% re-hedging matrix, Cross-Index Institutional Gamma Radar & Heatmap, Segregated Experimental PC-GEX Model (Rule 11), and Daily Session Recap & Audit Journal.
 - **Stage 7 (Completed):** Real-Time $\Delta\text{OI}$ Buildup Matrix, Intraday Gamma Velocity ($d\text{GEX}/dt$), dual-sided Put/Call bar graphic, and Option Chain flow indicators.
 - **Stage 8 (Completed):** 0DTE Expiry Pin Probability & Magnetic Strike Forecaster, Max Pain loss minimization, Risk-Neutral Expiry Density, Dealer Gravity Vector, and multi-horizon convergence simulator.
+- **Stage 9 (Completed):** GitHub Pages deployment pipeline, 30-second live client-side streaming, and automated market-close Git data sync via GitHub Actions.
 
+---
 
+## GitHub Deployment & Automated Data Sync
 
+This application is designed to be hosted directly on **GitHub Pages** with live client-side data streaming and automated market-close data sync committed directly to the Git repository.
 
+### 1. Enable GitHub Pages Hosting
+1. In your GitHub repository, navigate to **Settings** > **Pages**.
+2. Under **Build and deployment** > **Source**, select **GitHub Actions**.
+3. Any push to `main` will automatically trigger `.github/workflows/deploy-pages.yml`, run the test suite, build the bundle, and deploy to your GitHub Pages URL:
+   `https://<your-username>.github.io/dhan-gex-scanner/`
+
+### 2. Configure DhanHQ API Credentials for Git Sync
+To allow the automated GitHub Action to fetch live EOD market snapshots and commit them to Git:
+1. Navigate to your GitHub repository > **Settings** > **Secrets and variables** > **Actions**.
+2. Click **New repository secret** and add:
+   - `DHAN_CLIENT_ID`: Your Dhan Client ID (numeric, e.g. `1000000000`)
+   - `DHAN_ACCESS_TOKEN`: Your DhanHQ API Access Token (JWT string)
+
+### 3. How the Dual Data Sync Model Works
+1. **Live 30-Second Streaming in Browser:**
+   - When you access the hosted scanner URL in your browser, you can enter your Dhan Client ID and Access Token in the **API Settings** modal.
+   - Credentials are stored strictly on your local device (in `localStorage` / `sessionStorage`) and are **never committed or transmitted to any server except directly to Dhan's official `api.dhan.co` endpoints**.
+   - The scanner polls live option chains every **30 seconds** during market hours.
+2. **Automated Git EOD Snapshot:**
+   - The `.github/workflows/market-snapshot.yml` workflow triggers automatically Monday through Friday at **15:35 IST (10:05 UTC)** at market close.
+   - It executes `pnpm snapshot:fetch`, computes conventional GEX levels for all active indices, and commits `public/data/latest-gex.json` and timestamped archives (`public/data/archive/gex-YYYY-MM-DD.json`) directly into the Git repository.
+3. **Seamless Git Snapshot Fallback:**
+   - If you visit the scanner outside market hours or without configuring personal API keys, the app automatically loads the committed Git snapshot with a `GIT SNAPSHOT (<date>)` badge.

@@ -5,34 +5,52 @@ import { DhanApiClient } from '../services/dhan/client';
 describe('snapshotEngine', () => {
   it('generates a valid snapshot payload structure for standard indices', async () => {
     const mockClient = {
-      getQuotes: vi.fn().mockResolvedValue({
-        data: {
-          IDX_I: {
-            '13': { last_price: 24500, volume: 1000000 },
-            '25': { last_price: 52000, volume: 500000 },
-          },
-        },
-      }),
       getOptionChain: vi.fn().mockResolvedValue({
-        data: {
-          data: {
-            spot: 24500,
-            oc: {
-              '24400.000000': {
-                ce: { oi: 5000, last_price: 150, volume: 1000 },
-                pe: { oi: 15000, last_price: 40, volume: 2000 },
-              },
-              '24500.000000': {
-                ce: { oi: 25000, last_price: 80, volume: 5000 },
-                pe: { oi: 25000, last_price: 75, volume: 4500 },
-              },
-              '24600.000000': {
-                ce: { oi: 18000, last_price: 35, volume: 3000 },
-                pe: { oi: 6000, last_price: 130, volume: 1500 },
-              },
-            },
+        underlyingScrip: 13,
+        underlyingPrice: 24500,
+        expiry: '2026-10-25',
+        timestamp: '2026-10-25T10:00:00Z',
+        strikes: [
+          {
+            strikePrice: 24400,
+            callPrice: 150,
+            callOi: 5000,
+            callPreviousOi: 5000,
+            callVolume: 1000,
+            callIv: 0.15,
+            putPrice: 40,
+            putOi: 15000,
+            putPreviousOi: 15000,
+            putVolume: 2000,
+            putIv: 0.15,
           },
-        },
+          {
+            strikePrice: 24500,
+            callPrice: 80,
+            callOi: 25000,
+            callPreviousOi: 25000,
+            callVolume: 5000,
+            callIv: 0.15,
+            putPrice: 75,
+            putOi: 25000,
+            putPreviousOi: 25000,
+            putVolume: 4500,
+            putIv: 0.15,
+          },
+          {
+            strikePrice: 24600,
+            callPrice: 35,
+            callOi: 18000,
+            callPreviousOi: 18000,
+            callVolume: 3000,
+            callIv: 0.15,
+            putPrice: 130,
+            putOi: 6000,
+            putPreviousOi: 6000,
+            putVolume: 1500,
+            putIv: 0.15,
+          },
+        ],
       }),
     } as unknown as DhanApiClient;
 

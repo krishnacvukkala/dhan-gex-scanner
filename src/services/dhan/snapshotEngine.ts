@@ -5,7 +5,6 @@ import { calculateOptionChainGex } from '../gex/engine';
 import { calculateDexAndHedgingFlow } from '../gex/dexEngine';
 import { calculatePinProbabilities } from '../gex/pinProbabilityEngine';
 import { StrikeGexDetail } from '../gex/types';
-import { NormalizedOptionChain, NormalizedOptionStrike } from './types';
 
 export interface IndexSnapshotData {
   symbol: string;
@@ -58,13 +57,15 @@ export async function generateMarketSnapshot(
       );
       if (!inst) continue;
 
-      const dex = calculateDexAndHedgingFlow(inst.strikes, inst.lastPrice, inst.lotSize, inst.netGex * 1e7);
-      const pinForecast = calculatePinProbabilities(inst.strikes, inst.lastPrice, 0.05);
+      const strikes = inst.strikes || [];
+      const lotSize = inst.lotSize || 50;
+      const dex = calculateDexAndHedgingFlow(strikes, inst.lastPrice, lotSize, inst.netGex * 1e7);
+      const pinForecast = calculatePinProbabilities(strikes, inst.lastPrice, 0.05);
 
       indicesData[targetName] = {
         symbol: inst.symbol,
         name: inst.name,
-        securityId: inst.underlyingScrip,
+        securityId: inst.underlyingScrip || 13,
         spotPrice: inst.lastPrice,
         timestamp: generatedAt,
         netGex: inst.netGex,
@@ -78,7 +79,7 @@ export async function generateMarketSnapshot(
           strike: p.strike,
           probability: Number((p.pinProbabilityPct ?? 0).toFixed(2)),
         })),
-        strikes: inst.strikes,
+        strikes,
       };
     }
 
@@ -101,43 +102,14 @@ export async function generateMarketSnapshot(
     if (!reg) continue;
 
     try {
-      const ocRes = await client.getOptionChain(reg.underlyingScrip, reg.exchangeSegment);
-      // Support both { data: { data: { oc, spot } } } or { data: { oc, last_price } }
-      // @ts-expect-error handle flexible broker payload shape
-      const ocObj = ocRes?.data?.data?.oc || ocRes?.data?.oc || {};
-      // @ts-expect-error handle flexible broker spot price
-      const spot = ocRes?.data?.data?.spot || ocRes?.data?.last_price || (reg.underlyingScrip === 13 ? 24500 : 52000);
+      const expiry = new Date().toISOString().split('T')[0];
+      const normChain = await client.getOptionChain({
+        UnderlyingScrip: reg.underlyingScrip,
+        UnderlyingSeg: reg.exchangeSegment,
+        Expiry: expiry,
+      });
 
-      const strikes: NormalizedOptionStrike[] = [];
-      const strikeKeys = Object.keys(ocObj).map(Number).sort((a, b) => a - b);
-
-      for (const strikePrice of strikeKeys) {
-        const item = ocObj[strikePrice.toFixed(6)] || ocObj[strikePrice];
-        if (!item) continue;
-
-        strikes.push({
-          strikePrice,
-          callPrice: item.ce?.last_price || 0,
-          callOi: item.ce?.oi || 0,
-          callPreviousOi: item.ce?.previous_oi || item.ce?.oi || 0,
-          callVolume: item.ce?.volume || 0,
-          callIv: (item.ce?.implied_volatility || item.ce?.iv || 15) / 100,
-          putPrice: item.pe?.last_price || 0,
-          putOi: item.pe?.oi || 0,
-          putPreviousOi: item.pe?.previous_oi || item.pe?.oi || 0,
-          putVolume: item.pe?.volume || 0,
-          putIv: (item.pe?.implied_volatility || item.pe?.iv || 15) / 100,
-        });
-      }
-
-      const normChain: NormalizedOptionChain = {
-        underlyingScrip: reg.underlyingScrip,
-        underlyingPrice: spot,
-        expiry: new Date().toISOString().split('T')[0],
-        strikes,
-        timestamp: generatedAt,
-      };
-
+      const spot = normChain.underlyingPrice;
       const gexResult = calculateOptionChainGex(normChain, {
         symbol: reg.symbol,
         lotSize: reg.lotSize,
@@ -178,7 +150,7 @@ export async function generateMarketSnapshot(
         indicesData[targetName] = {
           symbol: mock.symbol,
           name: mock.name,
-          securityId: mock.underlyingScrip,
+          securityId: mock.underlyingScrip || reg.underlyingScrip,
           spotPrice: mock.lastPrice,
           timestamp: generatedAt,
           netGex: mock.netGex,
@@ -189,7 +161,7 @@ export async function generateMarketSnapshot(
           putWall: mock.putWall,
           netDexCr: 0,
           pinStrikes: [],
-          strikes: mock.strikes,
+          strikes: mock.strikes || [],
         };
       }
     }
