@@ -38,6 +38,9 @@ export const App: React.FC = () => {
     setIsLiveMode,
     connectionStatus,
     liveInstruments,
+    snapshotInstruments,
+    snapshotTimestamp,
+    sourceMode,
     lastSyncTime,
     isPolling,
     pollIntervalMs,
@@ -52,8 +55,11 @@ export const App: React.FC = () => {
     if (isLiveMode) {
       return liveInstruments.length > 0 ? liveInstruments : [];
     }
+    if (snapshotInstruments && snapshotInstruments.length > 0) {
+      return snapshotInstruments;
+    }
     return MOCK_INSTRUMENTS;
-  }, [isLiveMode, liveInstruments]);
+  }, [isLiveMode, liveInstruments, snapshotInstruments]);
 
   // Real-time GEX Level Alerting hook
   const {
@@ -136,6 +142,8 @@ export const App: React.FC = () => {
         }}
         onOpenRadar={() => setIsRadarOpen(true)}
         onOpenRecap={() => setIsRecapOpen(true)}
+        sourceMode={sourceMode}
+        snapshotTimestamp={snapshotTimestamp}
       />
 
       <main className="app-main">

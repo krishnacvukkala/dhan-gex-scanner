@@ -9,6 +9,7 @@ import {
 import { calculateOptionChainGex } from '../services/gex/engine';
 import { adaptGexResultToInstrument } from '../services/dhan/adapter';
 import { DhanRateLimitError, DhanAuthError } from '../services/dhan/errors';
+import { loadGitSnapshot, convertSnapshotToInstrument } from '../services/dhan/snapshotLoader';
 
 export interface UseLiveGexScannerOptions {
   enabled?: boolean;
@@ -21,6 +22,9 @@ export interface UseLiveGexScannerReturn {
   setIsLiveMode: (enabled: boolean) => void;
   connectionStatus: ConnectionStatus;
   liveInstruments: Instrument[];
+  snapshotInstruments: Instrument[];
+  snapshotTimestamp: string | null;
+  sourceMode: 'LIVE_DHAN' | 'GIT_SNAPSHOT' | 'SIMULATED';
   lastSyncTime: Date | null;
   isPolling: boolean;
   pollIntervalMs: number;
@@ -59,13 +63,33 @@ export function useLiveGexScanner(
   const [isLiveMode, setIsLiveMode] = useState<boolean>(options.enabled ?? false);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('DISCONNECTED');
   const [liveInstruments, setLiveInstruments] = useState<Instrument[]>([]);
+  const [snapshotInstruments, setSnapshotInstruments] = useState<Instrument[]>([]);
+  const [snapshotTimestamp, setSnapshotTimestamp] = useState<string | null>(null);
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
   const [isPolling, setIsPolling] = useState<boolean>(false);
   const [pollIntervalMs, setPollIntervalMs] = useState<number>(
-    options.defaultPollIntervalMs ?? 15000
+    options.defaultPollIntervalMs ?? 30000
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [expiryDate, setExpiryDate] = useState<string>(getNearestThursdayExpiry());
+
+  // Load Git snapshot on mount
+  useEffect(() => {
+    let mounted = true;
+    loadGitSnapshot().then((snapshot) => {
+      if (!mounted || !snapshot) return;
+      const instruments: Instrument[] = Object.values(snapshot.indices).map((idx) =>
+        convertSnapshotToInstrument(idx)
+      );
+      if (instruments.length > 0) {
+        setSnapshotInstruments(instruments);
+        setSnapshotTimestamp(snapshot.generatedAt);
+      }
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const activeInstruments = options.instrumentsToScan ?? DHAN_REGISTERED_INSTRUMENTS;
   const pollTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -215,11 +239,21 @@ export function useLiveGexScanner(
     };
   }, [isLiveMode, pollIntervalMs, executeScan]);
 
+  const sourceMode: 'LIVE_DHAN' | 'GIT_SNAPSHOT' | 'SIMULATED' =
+    isLiveMode && liveInstruments.length > 0
+      ? 'LIVE_DHAN'
+      : snapshotInstruments.length > 0
+      ? 'GIT_SNAPSHOT'
+      : 'SIMULATED';
+
   return {
     isLiveMode,
     setIsLiveMode,
     connectionStatus,
     liveInstruments,
+    snapshotInstruments,
+    snapshotTimestamp,
+    sourceMode,
     lastSyncTime,
     isPolling,
     pollIntervalMs,

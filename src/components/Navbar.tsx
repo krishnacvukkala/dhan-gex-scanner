@@ -28,6 +28,8 @@ interface NavbarProps {
   onOpenAlerts?: () => void;
   onOpenRadar?: () => void;
   onOpenRecap?: () => void;
+  sourceMode?: 'LIVE_DHAN' | 'GIT_SNAPSHOT' | 'SIMULATED';
+  snapshotTimestamp?: string | null;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -45,6 +47,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenAlerts,
   onOpenRadar,
   onOpenRecap,
+  sourceMode = 'SIMULATED',
+  snapshotTimestamp,
 }) => {
   const getStatusDotClass = () => {
     switch (connectionStatus) {
@@ -65,7 +69,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const getStatusLabel = () => {
     switch (connectionStatus) {
       case 'CONNECTED':
-        return 'Live Feed';
+        return 'Live Feed (30s)';
       case 'CONNECTING':
         return 'Syncing...';
       case 'RATE_LIMITED':
@@ -75,6 +79,19 @@ export const Navbar: React.FC<NavbarProps> = ({
       case 'DISCONNECTED':
       default:
         return 'Disconnected';
+    }
+  };
+
+  const formatSnapshotTime = (isoString?: string | null) => {
+    if (!isoString) return 'Market Close';
+    try {
+      const d = new Date(isoString);
+      return d.toLocaleDateString('en-IN', {
+        month: 'short',
+        day: 'numeric',
+      });
+    } catch {
+      return 'Market Close';
     }
   };
 
@@ -99,6 +116,35 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <span className="status-dot"></span>
             <span className="status-label">{getStatusLabel()}</span>
+          </div>
+        ) : sourceMode === 'GIT_SNAPSHOT' ? (
+          <div
+            className="snapshot-banner-tag"
+            title={`Loaded from Git repository snapshot: ${snapshotTimestamp || 'Market Close'}`}
+            data-testid="snapshot-banner-tag"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '4px 10px',
+              borderRadius: '9999px',
+              backgroundColor: 'rgba(56, 189, 248, 0.12)',
+              border: '1px solid rgba(56, 189, 248, 0.3)',
+              color: '#38bdf8',
+              fontSize: '11px',
+              fontWeight: 600,
+              letterSpacing: '0.04em',
+            }}
+          >
+            <span
+              style={{
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                backgroundColor: '#38bdf8',
+              }}
+            ></span>
+            <span>GIT SNAPSHOT ({formatSnapshotTime(snapshotTimestamp)})</span>
           </div>
         ) : (
           <div className="mock-banner-tag" title="Stage 1 & 3: Simulated mock dataset">
