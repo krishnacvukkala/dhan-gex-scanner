@@ -8,7 +8,8 @@ global.ResizeObserver = class ResizeObserver {
 };
 
 // Polyfill Canvas getContext for chart rendering mocks in jsdom
-HTMLCanvasElement.prototype.getContext = (() => {
+if (typeof HTMLCanvasElement !== 'undefined') {
+  HTMLCanvasElement.prototype.getContext = (() => {
   return {
     fillRect: () => {},
     clearRect: () => {},
@@ -38,3 +39,5 @@ HTMLCanvasElement.prototype.getContext = (() => {
     clip: () => {},
   } as unknown as CanvasRenderingContext2D;
 }) as unknown as typeof HTMLCanvasElement.prototype.getContext;
+}
+
