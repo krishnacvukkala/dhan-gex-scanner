@@ -3,10 +3,17 @@ import { Instrument, CandleData, NearestGexInfo } from '../../types';
 import { resolveLotSize } from '../gex/lotSize';
 
 export async function loadGitSnapshot(): Promise<GexSnapshotPayload | null> {
+  const base =
+    typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL
+      ? import.meta.env.BASE_URL
+      : './';
+  const cleanBase = base.endsWith('/') ? base : `${base}/`;
+
   const possiblePaths = [
+    `${cleanBase}data/latest-gex.json`,
     './data/latest-gex.json',
-    '/data/latest-gex.json',
     'data/latest-gex.json',
+    '/data/latest-gex.json',
   ];
 
   for (const path of possiblePaths) {
@@ -88,18 +95,23 @@ export function convertSnapshotToInstrument(data: IndexSnapshotData): Instrument
   };
 
   const dealerBias = data.netGex > 0 ? 'LONG_GAMMA' : data.netGex < 0 ? 'SHORT_GAMMA' : 'NEUTRAL';
+  const inferredType: 'INDEX' | 'STOCK' =
+    data.type ||
+    (data.symbol.toUpperCase().includes('NIFTY') || data.symbol.toUpperCase().includes('SENSEX')
+      ? 'INDEX'
+      : 'STOCK');
 
   return {
     id: data.symbol.toLowerCase().replace(/\s+/g, '-'),
     symbol: data.symbol,
     name: data.name,
-    type: 'INDEX',
+    type: inferredType,
     lastPrice: spot,
-    change: 0,
-    changePercent: 0,
-    dayHigh: Math.max(spot, data.callWall),
-    dayLow: Math.min(spot, data.putWall),
-    volume: '1.2M',
+    change: data.change ?? 0,
+    changePercent: data.changePercent ?? 0,
+    dayHigh: data.dayHigh ?? Math.max(spot, data.callWall),
+    dayLow: data.dayLow ?? Math.min(spot, data.putWall),
+    volume: data.volume ?? '1.2M',
     callWall: data.callWall,
     putWall: data.putWall,
     gammaFlip: data.gammaFlip,
@@ -109,9 +121,11 @@ export function convertSnapshotToInstrument(data: IndexSnapshotData): Instrument
     nearestGex,
     updatedAt: data.timestamp,
     isSimulated: false,
-    candles: generateCandlesFromSpot(spot),
-    lotSize: resolveLotSize(data.symbol),
+    candles: data.candles && data.candles.length > 0 ? data.candles : generateCandlesFromSpot(spot),
+    lotSize: data.lotSize ?? resolveLotSize(data.symbol),
     underlyingScrip: data.securityId,
+    expiry: data.expiry,
+    prevSession: data.prevSession,
     strikes: data.strikes || [],
   };
 }

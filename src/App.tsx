@@ -50,10 +50,10 @@ export const App: React.FC = () => {
     expiryDate,
   } = useLiveGexScanner();
 
-  // Active dataset depends on mode
+  // Active dataset depends on mode: seamlessly falls back to snapshot data if live feed is connecting or unconfigured
   const rawInstruments = useMemo(() => {
-    if (isLiveMode) {
-      return liveInstruments.length > 0 ? liveInstruments : [];
+    if (isLiveMode && liveInstruments.length > 0) {
+      return liveInstruments;
     }
     if (snapshotInstruments && snapshotInstruments.length > 0) {
       return snapshotInstruments;
@@ -155,6 +155,8 @@ export const App: React.FC = () => {
                 ? 'banner-error'
                 : connectionStatus === 'RATE_LIMITED'
                 ? 'banner-warning'
+                : connectionStatus === 'CONNECTING'
+                ? 'banner-warning'
                 : 'banner-connected'
             }`}
             data-testid="live-status-banner"
@@ -163,7 +165,13 @@ export const App: React.FC = () => {
               <Radio size={18} className="banner-icon pulse-icon" />
               <div className="banner-text">
                 <div className="live-banner-headline">
-                  <strong>Live DhanHQ Option Chain Feed Active.</strong>
+                  <strong>
+                    {liveInstruments.length > 0
+                      ? 'Live DhanHQ Option Chain Feed Active.'
+                      : connectionStatus === 'CONNECTING'
+                      ? 'Connecting to DhanHQ Option Chain Feed...'
+                      : 'Live Dhan Mode (Market Snapshot Active)'}
+                  </strong>
                   <span className="live-badge-detail font-mono">
                     Expiry: {expiryDate}
                   </span>
@@ -172,14 +180,14 @@ export const App: React.FC = () => {
                       <Clock size={11} className="inline-icon" /> Last Sync: {lastSyncTime.toLocaleTimeString()}
                     </span>
                   )}
-                  {liveInstruments.length > 0 && (
-                    <span className="live-badge-detail font-mono">
-                      <Layers size={11} className="inline-icon" /> {liveInstruments.length} Symbols Scanned
-                    </span>
-                  )}
+                  <span className="live-badge-detail font-mono">
+                    <Layers size={11} className="inline-icon" /> {rawInstruments.length} Symbols Available
+                  </span>
                 </div>
                 <span>
-                  {errorMessage ? (
+                  {liveInstruments.length === 0 && connectionStatus === 'CONNECTING' ? (
+                    'Connecting to DhanHQ API... Displaying repository market snapshot in the meantime.'
+                  ) : errorMessage ? (
                     <span className="banner-error-text">
                       {errorMessage}{' '}
                       <button
@@ -193,6 +201,18 @@ export const App: React.FC = () => {
                   ) : (
                     'Real-time Black-Scholes gamma exposure and structural levels calculated from DhanHQ market data.'
                   )}
+                </span>
+              </div>
+            </div>
+          </section>
+        ) : sourceMode === 'GIT_SNAPSHOT' ? (
+          <section className="simulation-banner" data-testid="simulated-banner">
+            <div className="banner-content">
+              <ShieldAlert size={18} className="banner-icon" />
+              <div className="banner-text">
+                <strong>Git Repository Snapshot Active ({snapshotTimestamp ? new Date(snapshotTimestamp).toLocaleDateString() : 'Market Close'}).</strong>
+                <span>
+                  Displaying institutional Black-Scholes Gamma Exposure (GEX), strike pegs, and 5-minute candle history loaded directly from repository snapshot data. Switch to &apos;Live Dhan&apos; in navbar to poll real-time DhanHQ market data.
                 </span>
               </div>
             </div>
@@ -227,8 +247,6 @@ export const App: React.FC = () => {
           <LoadingState />
         ) : viewState === 'ERROR' ? (
           <ErrorState onRetry={() => setViewState('NORMAL')} />
-        ) : isLiveMode && liveInstruments.length === 0 && connectionStatus === 'CONNECTING' ? (
-          <LoadingState />
         ) : filteredInstruments.length === 0 ? (
           <EmptyState
             searchQuery={searchQuery}
