@@ -28,7 +28,13 @@ async function syncAndPush() {
   run(`git commit -m "${commitMsg}"`);
 
   console.log('🚀 [Market Sync] Pushing updated snapshot to GitHub origin/main...');
-  run('git push origin main');
+  try {
+    run('git push origin main');
+  } catch {
+    console.log('🔄 Remote has updates. Pulling before re-trying push...');
+    run('git pull --no-rebase origin main');
+    run('git push origin main');
+  }
 
   console.log('✅ [Market Sync] Successfully pushed! GitHub Pages will update with live data within ~60 seconds.');
   console.log('🌐 Web App URL: https://krishnacvukkala.github.io/dhan-gex-scanner/');
