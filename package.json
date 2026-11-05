@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "snapshot:fetch": "tsx scripts/fetch-market-snapshot.ts"
+    "snapshot:fetch": "tsx scripts/fetch-market-snapshot.ts",
+    "market:sync": "tsx scripts/sync-and-push.ts",
+    "market:daemon": "tsx scripts/market-daemon.ts"
   },
   "dependencies": {
     "lightweight-charts": "^4.2.2",
