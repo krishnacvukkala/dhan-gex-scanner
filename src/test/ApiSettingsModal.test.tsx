@@ -37,6 +37,7 @@ describe('ApiSettingsModal Component', () => {
     expect(screen.getByText('DhanHQ API Configuration')).toBeInTheDocument();
     expect(screen.getByTestId('client-id-input')).toBeInTheDocument();
     expect(screen.getByTestId('access-token-input')).toBeInTheDocument();
+    expect(screen.getByTestId('cors-proxy-input')).toBeInTheDocument();
     expect(screen.getByTestId('poll-interval-select')).toHaveValue('15000');
     expect(screen.getByTestId('test-connection-btn')).toBeInTheDocument();
     expect(screen.getByTestId('save-settings-btn')).toBeInTheDocument();
@@ -111,7 +112,7 @@ describe('ApiSettingsModal Component', () => {
     const saveBtn = screen.getByTestId('save-settings-btn');
     fireEvent.click(saveBtn);
 
-    expect(saveSpy).toHaveBeenCalledWith('1100223344', 'test-jwt-token', false);
+    expect(saveSpy).toHaveBeenCalledWith('1100223344', 'test-jwt-token', false, '');
     expect(onPollIntervalChange).toHaveBeenCalledWith(30000);
     expect(onSaved).toHaveBeenCalled();
     expect(onClose).toHaveBeenCalled();
@@ -122,6 +123,7 @@ describe('ApiSettingsModal Component', () => {
     vi.spyOn(credMgr, 'getStoredCredentials').mockReturnValue({
       clientId: 'existing-id',
       accessToken: 'existing-token',
+      corsProxyUrl: '',
       remember: true,
     });
 
@@ -140,5 +142,40 @@ describe('ApiSettingsModal Component', () => {
     expect(clearSpy).toHaveBeenCalled();
     expect(screen.getByTestId('client-id-input')).toHaveValue('');
     expect(screen.getByTestId('access-token-input')).toHaveValue('');
+    expect(screen.getByTestId('cors-proxy-input')).toHaveValue('');
+  });
+
+  it('saves custom CORS proxy URL when provided', () => {
+    const saveSpy = vi.spyOn(credMgr, 'saveCredentials');
+    const onClose = vi.fn();
+
+    render(
+      <ApiSettingsModal
+        isOpen={true}
+        onClose={onClose}
+        pollIntervalMs={15000}
+        onPollIntervalChange={vi.fn()}
+      />
+    );
+
+    fireEvent.change(screen.getByTestId('client-id-input'), {
+      target: { value: '1100223344' },
+    });
+    fireEvent.change(screen.getByTestId('access-token-input'), {
+      target: { value: 'test-jwt-token' },
+    });
+    fireEvent.change(screen.getByTestId('cors-proxy-input'), {
+      target: { value: 'https://proxy.example.com' },
+    });
+
+    fireEvent.click(screen.getByTestId('save-settings-btn'));
+
+    expect(saveSpy).toHaveBeenCalledWith(
+      '1100223344',
+      'test-jwt-token',
+      false,
+      'https://proxy.example.com'
+    );
+    expect(onClose).toHaveBeenCalled();
   });
 });

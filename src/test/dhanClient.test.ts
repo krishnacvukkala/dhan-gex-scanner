@@ -233,4 +233,37 @@ describe('DhanHQ Service - API Client (Read-Only Safety & Methods)', () => {
     expect(candles.close).toEqual([25120, 25135]);
     expect(candles.volume).toEqual([1500, 2200]);
   });
+
+  it('routes requests through CORS proxy when corsProxyUrl is provided', async () => {
+    let requestedUrl = '';
+    const mockFetch = vi.fn().mockImplementation((url: string) => {
+      requestedUrl = url;
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ data: ['2026-11-12'], status: 'success' }),
+      });
+    });
+
+    const client = new DhanApiClient(
+      {
+        ...validConfig,
+        corsProxyUrl: 'https://my-proxy.workers.dev',
+      },
+      mockFetch as unknown as typeof fetch
+    );
+
+    const expiries = await client.getExpiryList(13, 'IDX_I');
+    expect(expiries).toEqual(['2026-11-12']);
+    expect(requestedUrl).toBe('https://my-proxy.workers.dev/https://api.dhan.co/v2/optionchain/expirylist');
+  });
+
+  it('detects likely CORS block and surfaces actionable guidance when no proxy configured', async () => {
+    const mockFetch = vi.fn().mockImplementation(() => {
+      return Promise.reject(new TypeError('Failed to fetch'));
+    });
+
+    const client = new DhanApiClient(validConfig, mockFetch as unknown as typeof fetch);
+    await expect(client.getExpiryList(13, 'IDX_I')).rejects.toThrow(/CORS blocked/);
+  });
 });

@@ -21,16 +21,18 @@ describe('Credential Manager', () => {
   });
 
   it('should save and retrieve credentials in sessionStorage by default', () => {
-    saveCredentials('client-123', 'token-abc', false);
+    saveCredentials('client-123', 'token-abc', false, 'https://proxy.example.com');
 
     const creds = getStoredCredentials();
     expect(creds).not.toBeNull();
     expect(creds?.clientId).toBe('client-123');
     expect(creds?.accessToken).toBe('token-abc');
+    expect(creds?.corsProxyUrl).toBe('https://proxy.example.com');
     expect(creds?.remember).toBe(false);
     expect(hasConfiguredCredentials()).toBe(true);
 
     expect(window.sessionStorage.getItem('dhan_gex_client_id')).toBe('client-123');
+    expect(window.sessionStorage.getItem('dhan_gex_cors_proxy')).toBe('https://proxy.example.com');
     expect(window.localStorage.getItem('dhan_gex_client_id')).toBeNull();
   });
 

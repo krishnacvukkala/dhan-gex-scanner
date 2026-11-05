@@ -4,11 +4,13 @@ import { maskCredential } from './config';
 export interface StoredDhanCredentials {
   clientId: string;
   accessToken: string;
+  corsProxyUrl: string;
   remember: boolean;
 }
 
 const STORAGE_KEY_CLIENT_ID = 'dhan_gex_client_id';
 const STORAGE_KEY_ACCESS_TOKEN = 'dhan_gex_access_token';
+const STORAGE_KEY_CORS_PROXY = 'dhan_gex_cors_proxy';
 const STORAGE_KEY_REMEMBER = 'dhan_gex_remember';
 
 /**
@@ -20,6 +22,19 @@ const STORAGE_KEY_REMEMBER = 'dhan_gex_remember';
  */
 export function getStoredCredentials(): StoredDhanCredentials | null {
   try {
+    // Helper to read cors proxy from any storage level
+    const readProxy = (): string => {
+      try {
+        return (
+          window.sessionStorage?.getItem(STORAGE_KEY_CORS_PROXY) ||
+          window.localStorage?.getItem(STORAGE_KEY_CORS_PROXY) ||
+          ''
+        );
+      } catch {
+        return '';
+      }
+    };
+
     // 1. Session storage
     if (typeof window !== 'undefined' && window.sessionStorage) {
       const sessClientId = window.sessionStorage.getItem(STORAGE_KEY_CLIENT_ID);
@@ -28,6 +43,7 @@ export function getStoredCredentials(): StoredDhanCredentials | null {
         return {
           clientId: sessClientId.trim(),
           accessToken: sessToken.trim(),
+          corsProxyUrl: readProxy(),
           remember: false,
         };
       }
@@ -41,6 +57,7 @@ export function getStoredCredentials(): StoredDhanCredentials | null {
         return {
           clientId: localClientId.trim(),
           accessToken: localToken.trim(),
+          corsProxyUrl: readProxy(),
           remember: true,
         };
       }
@@ -64,6 +81,7 @@ export function getStoredCredentials(): StoredDhanCredentials | null {
       return {
         clientId: envClientId.trim(),
         accessToken: envToken.trim(),
+        corsProxyUrl: '',
         remember: false,
       };
     }
@@ -89,26 +107,32 @@ export function hasConfiguredCredentials(): boolean {
 export function saveCredentials(
   clientId: string,
   accessToken: string,
-  remember = false
+  remember = false,
+  corsProxyUrl = ''
 ): void {
   const cleanClientId = clientId.trim();
   const cleanToken = accessToken.trim();
+  const cleanProxy = corsProxyUrl.trim().replace(/\/+$/, '');
 
   if (typeof window === 'undefined') return;
 
   if (remember) {
     window.localStorage?.setItem(STORAGE_KEY_CLIENT_ID, cleanClientId);
     window.localStorage?.setItem(STORAGE_KEY_ACCESS_TOKEN, cleanToken);
+    window.localStorage?.setItem(STORAGE_KEY_CORS_PROXY, cleanProxy);
     window.localStorage?.setItem(STORAGE_KEY_REMEMBER, 'true');
     // Clear session storage to avoid duplication
     window.sessionStorage?.removeItem(STORAGE_KEY_CLIENT_ID);
     window.sessionStorage?.removeItem(STORAGE_KEY_ACCESS_TOKEN);
+    window.sessionStorage?.removeItem(STORAGE_KEY_CORS_PROXY);
   } else {
     window.sessionStorage?.setItem(STORAGE_KEY_CLIENT_ID, cleanClientId);
     window.sessionStorage?.setItem(STORAGE_KEY_ACCESS_TOKEN, cleanToken);
+    window.sessionStorage?.setItem(STORAGE_KEY_CORS_PROXY, cleanProxy);
     // Clear local storage
     window.localStorage?.removeItem(STORAGE_KEY_CLIENT_ID);
     window.localStorage?.removeItem(STORAGE_KEY_ACCESS_TOKEN);
+    window.localStorage?.removeItem(STORAGE_KEY_CORS_PROXY);
     window.localStorage?.removeItem(STORAGE_KEY_REMEMBER);
   }
 }
@@ -120,8 +144,10 @@ export function clearCredentials(): void {
   if (typeof window === 'undefined') return;
   window.sessionStorage?.removeItem(STORAGE_KEY_CLIENT_ID);
   window.sessionStorage?.removeItem(STORAGE_KEY_ACCESS_TOKEN);
+  window.sessionStorage?.removeItem(STORAGE_KEY_CORS_PROXY);
   window.localStorage?.removeItem(STORAGE_KEY_CLIENT_ID);
   window.localStorage?.removeItem(STORAGE_KEY_ACCESS_TOKEN);
+  window.localStorage?.removeItem(STORAGE_KEY_CORS_PROXY);
   window.localStorage?.removeItem(STORAGE_KEY_REMEMBER);
 }
 

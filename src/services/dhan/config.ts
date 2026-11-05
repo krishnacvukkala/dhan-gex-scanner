@@ -36,6 +36,12 @@ export function loadDhanConfig(override?: Partial<DhanConfig>): DhanConfig {
     getEnvVariable('DHAN_BASE_URL') ||
     'https://api.dhan.co/v2';
 
+  const corsProxyUrl =
+    override?.corsProxyUrl ||
+    getEnvVariable('VITE_DHAN_CORS_PROXY') ||
+    getEnvVariable('DHAN_CORS_PROXY') ||
+    '';
+
   const timeoutMs = override?.timeoutMs ?? 10000;
   const maxRetries = override?.maxRetries ?? 3;
   const requestsPerSecond = override?.requestsPerSecond ?? 10;
@@ -44,6 +50,7 @@ export function loadDhanConfig(override?: Partial<DhanConfig>): DhanConfig {
     clientId: clientId.trim(),
     accessToken: accessToken.trim(),
     baseUrl: baseUrl.trim().replace(/\/+$/, ''),
+    corsProxyUrl: corsProxyUrl.trim().replace(/\/+$/, ''),
     timeoutMs,
     maxRetries,
     requestsPerSecond,

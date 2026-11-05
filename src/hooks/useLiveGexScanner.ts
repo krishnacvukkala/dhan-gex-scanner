@@ -117,6 +117,7 @@ export function useLiveGexScanner(
     const client = new DhanApiClient({
       clientId: creds.clientId,
       accessToken: creds.accessToken,
+      corsProxyUrl: creds.corsProxyUrl || '',
     });
 
     const updatedInstruments: Instrument[] = [];

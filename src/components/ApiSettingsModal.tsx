@@ -11,6 +11,7 @@ import {
   CheckCircle,
   ExternalLink,
   RefreshCw,
+  Globe,
 } from 'lucide-react';
 import {
   getStoredCredentials,
@@ -37,6 +38,7 @@ export const ApiSettingsModal: React.FC<ApiSettingsModalProps> = ({
 }) => {
   const [clientId, setClientId] = useState('');
   const [accessToken, setAccessToken] = useState('');
+  const [corsProxyUrl, setCorsProxyUrl] = useState('');
   const [remember, setRemember] = useState(false);
   const [showToken, setShowToken] = useState(false);
   const [selectedInterval, setSelectedInterval] = useState(pollIntervalMs);
@@ -54,6 +56,7 @@ export const ApiSettingsModal: React.FC<ApiSettingsModalProps> = ({
       if (stored) {
         setClientId(stored.clientId || '');
         setAccessToken(stored.accessToken || '');
+        setCorsProxyUrl(stored.corsProxyUrl || '');
         setRemember(stored.remember ?? false);
       }
       setSelectedInterval(pollIntervalMs);
@@ -79,6 +82,7 @@ export const ApiSettingsModal: React.FC<ApiSettingsModalProps> = ({
       const client = new DhanApiClient({
         clientId: clientId.trim(),
         accessToken: accessToken.trim(),
+        corsProxyUrl: corsProxyUrl.trim(),
       });
       const result = await testDhanConnection(client);
       setTestResult(result);
@@ -94,7 +98,7 @@ export const ApiSettingsModal: React.FC<ApiSettingsModalProps> = ({
 
   const handleSave = () => {
     if (clientId.trim() && accessToken.trim()) {
-      saveCredentials(clientId.trim(), accessToken.trim(), remember);
+      saveCredentials(clientId.trim(), accessToken.trim(), remember, corsProxyUrl.trim());
     }
     onPollIntervalChange(selectedInterval);
     if (onCredentialsSaved) {
@@ -107,6 +111,7 @@ export const ApiSettingsModal: React.FC<ApiSettingsModalProps> = ({
     clearCredentials();
     setClientId('');
     setAccessToken('');
+    setCorsProxyUrl('');
     setRemember(false);
     setTestResult(null);
     if (onCredentialsSaved) {
@@ -207,6 +212,26 @@ export const ApiSettingsModal: React.FC<ApiSettingsModalProps> = ({
                 {showToken ? <EyeOff size={15} /> : <Eye size={15} />}
               </button>
             </div>
+          </div>
+
+          <div className="form-group">
+            <div className="form-label-row">
+              <label htmlFor="cors-proxy-url" className="form-label">
+                <Globe size={13} className="inline-icon" /> CORS Proxy URL (Optional for GitHub Pages)
+              </label>
+            </div>
+            <input
+              id="cors-proxy-url"
+              type="text"
+              className="form-input font-mono"
+              placeholder="e.g. https://my-cors-proxy.workers.dev (leave blank for local/daemon)"
+              value={corsProxyUrl}
+              onChange={(e) => setCorsProxyUrl(e.target.value)}
+              data-testid="cors-proxy-input"
+            />
+            <span className="checkbox-subtext" style={{ marginTop: '4px', display: 'block' }}>
+              Required if fetching live from GitHub Pages browser session. Leave blank when using localhost or local <code>pnpm market:daemon</code>.
+            </span>
           </div>
 
           <div className="form-row">

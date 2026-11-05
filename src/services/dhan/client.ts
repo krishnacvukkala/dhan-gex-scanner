@@ -29,9 +29,11 @@ export class DhanApiClient {
   private readonly config: DhanConfig;
   private readonly rateLimiter: TokenBucketRateLimiter;
   private readonly fetchFn: typeof fetch;
+  private readonly corsProxyUrl: string;
 
   constructor(config?: Partial<DhanConfig>, customFetch?: typeof fetch) {
     this.config = loadDhanConfig(config);
+    this.corsProxyUrl = (config?.corsProxyUrl ?? this.config.corsProxyUrl ?? '').trim().replace(/\/+$/, '');
     this.rateLimiter = new TokenBucketRateLimiter(
       this.config.requestsPerSecond ?? 10,
       this.config.requestsPerSecond ?? 10
@@ -66,7 +68,16 @@ export class DhanApiClient {
     // Rate limiter throttle
     await this.rateLimiter.acquire();
 
-    const url = `${this.config.baseUrl}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+    const dhanUrl = `${this.config.baseUrl}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+    // Route through CORS proxy if configured, otherwise direct
+    let url = dhanUrl;
+    if (this.corsProxyUrl) {
+      if (this.corsProxyUrl.endsWith('?url=') || this.corsProxyUrl.endsWith('?')) {
+        url = `${this.corsProxyUrl}${encodeURIComponent(dhanUrl)}`;
+      } else {
+        url = `${this.corsProxyUrl}/${dhanUrl}`;
+      }
+    }
     const headers: Record<string, string> = {
       'access-token': this.config.accessToken,
       'client-id': this.config.clientId,
@@ -146,8 +157,25 @@ export class DhanApiClient {
         return this.request<T>(endpoint, method, body, attempt + 1);
       }
 
+      // Detect CORS errors and provide actionable message
+      const errMsg = (err as Error)?.message || '';
+      const isCorsLikely =
+        errMsg.includes('Failed to fetch') ||
+        errMsg.includes('NetworkError') ||
+        errMsg.includes('CORS') ||
+        errMsg.includes('Load failed');
+
+      if (isCorsLikely && !this.corsProxyUrl) {
+        throw new DhanApiError(
+          `CORS blocked: Your browser cannot reach DhanHQ directly from this origin. ` +
+          `Configure a CORS Proxy URL in API Settings to enable browser-based live data.`,
+          0,
+          endpoint
+        );
+      }
+
       throw new DhanApiError(
-        `DhanHQ network failure on ${endpoint}: ${(err as Error)?.message || 'Unknown network error'}`,
+        `DhanHQ network failure on ${endpoint}: ${errMsg || 'Unknown network error'}`,
         0,
         endpoint
       );

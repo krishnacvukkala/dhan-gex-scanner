@@ -22,6 +22,7 @@ export interface DhanConfig {
   clientId: string;
   accessToken: string;
   baseUrl?: string;
+  corsProxyUrl?: string;
   timeoutMs?: number;
   maxRetries?: number;
   requestsPerSecond?: number;
