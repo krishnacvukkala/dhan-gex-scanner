@@ -101,6 +101,21 @@ export class DhanApiClient {
       // Handle HTTP status codes
       if (response.status === 401 || response.status === 403) {
         const errorData = await response.json().catch(() => ({}));
+        const rawMsg = JSON.stringify(errorData);
+        if (rawMsg.includes('806') || rawMsg.includes('Data APIs not Subscribed')) {
+          throw new DhanAuthError(
+            'DhanHQ Error 806: Data APIs not Subscribed. Please enable "Data APIs" in your Dhan account (web.dhan.co -> DhanHQ Trading APIs -> Data APIs).',
+            endpoint,
+            errorData
+          );
+        }
+        if (rawMsg.includes('808') || rawMsg.includes('Token invalid')) {
+          throw new DhanAuthError(
+            'DhanHQ Error 808: Access Token expired or invalid. Please generate a fresh token at dhanhq.co',
+            endpoint,
+            errorData
+          );
+        }
         throw new DhanAuthError('Authentication failed with DhanHQ API. Verify access token and client ID.', endpoint, errorData);
       }
 

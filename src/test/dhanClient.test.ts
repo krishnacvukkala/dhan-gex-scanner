@@ -169,6 +169,21 @@ describe('DhanHQ Service - API Client (Read-Only Safety & Methods)', () => {
     ).rejects.toThrow(DhanAuthError);
   });
 
+  it('provides specific actionable message when DhanHQ returns 806 Data APIs not Subscribed', async () => {
+    const mockFetch = vi.fn().mockImplementation(() => {
+      return Promise.resolve({
+        ok: false,
+        status: 401,
+        json: () => Promise.resolve({ data: { '806': 'Data APIs not Subscribed' }, status: 'failed' }),
+      });
+    });
+
+    const client = new DhanApiClient(validConfig, mockFetch as unknown as typeof fetch);
+    await expect(
+      client.getQuotes({ IDX_I: [13] })
+    ).rejects.toThrow(/Data APIs not Subscribed/);
+  });
+
   it('throws DhanNotFoundError on HTTP 404', async () => {
     const mockFetch = vi.fn().mockImplementation(() => {
       return Promise.resolve({
