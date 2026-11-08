@@ -205,6 +205,26 @@ export const App: React.FC = () => {
               </div>
             </div>
           </section>
+        ) : sourceMode === 'LIVE_DHAN' ? (
+          <section className="live-status-banner banner-connected" data-testid="live-snapshot-banner">
+            <div className="banner-content">
+              <Radio size={18} className="banner-icon text-emerald" />
+              <div className="banner-text">
+                <div className="live-banner-headline">
+                  <strong>Live DhanHQ Pro Data Snapshot Active</strong>
+                  <span className="live-badge-detail font-mono">
+                    <Clock size={11} className="inline-icon" /> Synced: {snapshotTimestamp ? new Date(snapshotTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Live'}
+                  </span>
+                  <span className="live-badge-detail font-mono">
+                    <Layers size={11} className="inline-icon" /> {rawInstruments.length} Symbols
+                  </span>
+                </div>
+                <span>
+                  Real-time Black-Scholes gamma exposure and structural levels calculated directly from DhanHQ Pro Data.
+                </span>
+              </div>
+            </div>
+          </section>
         ) : sourceMode === 'GIT_SNAPSHOT' ? (
           <section className="simulation-banner" data-testid="simulated-banner">
             <div className="banner-content">

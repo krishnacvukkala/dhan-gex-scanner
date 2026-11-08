@@ -24,6 +24,7 @@ export interface UseLiveGexScannerReturn {
   liveInstruments: Instrument[];
   snapshotInstruments: Instrument[];
   snapshotTimestamp: string | null;
+  snapshotMode: 'LIVE_DHAN_SNAPSHOT' | 'SIMULATED_SNAPSHOT' | null;
   sourceMode: 'LIVE_DHAN' | 'GIT_SNAPSHOT' | 'SIMULATED';
   lastSyncTime: Date | null;
   isPolling: boolean;
@@ -65,6 +66,7 @@ export function useLiveGexScanner(
   const [liveInstruments, setLiveInstruments] = useState<Instrument[]>([]);
   const [snapshotInstruments, setSnapshotInstruments] = useState<Instrument[]>([]);
   const [snapshotTimestamp, setSnapshotTimestamp] = useState<string | null>(null);
+  const [snapshotMode, setSnapshotMode] = useState<'LIVE_DHAN_SNAPSHOT' | 'SIMULATED_SNAPSHOT' | null>(null);
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
   const [isPolling, setIsPolling] = useState<boolean>(false);
   const [pollIntervalMs, setPollIntervalMs] = useState<number>(
@@ -89,6 +91,7 @@ export function useLiveGexScanner(
       if (instruments.length > 0) {
         setSnapshotInstruments(instruments);
         setSnapshotTimestamp(snapshot.generatedAt);
+        setSnapshotMode(snapshot.mode || 'LIVE_DHAN_SNAPSHOT');
       }
     });
     return () => {
@@ -246,7 +249,7 @@ export function useLiveGexScanner(
   }, [isLiveMode, pollIntervalMs, executeScan]);
 
   const sourceMode: 'LIVE_DHAN' | 'GIT_SNAPSHOT' | 'SIMULATED' =
-    isLiveMode && liveInstruments.length > 0
+    (isLiveMode && liveInstruments.length > 0) || snapshotMode === 'LIVE_DHAN_SNAPSHOT'
       ? 'LIVE_DHAN'
       : snapshotInstruments.length > 0
       ? 'GIT_SNAPSHOT'
@@ -259,6 +262,7 @@ export function useLiveGexScanner(
     liveInstruments,
     snapshotInstruments,
     snapshotTimestamp,
+    snapshotMode,
     sourceMode,
     lastSyncTime,
     isPolling,

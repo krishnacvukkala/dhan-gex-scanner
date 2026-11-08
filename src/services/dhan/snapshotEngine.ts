@@ -216,6 +216,32 @@ export async function generateMarketSnapshot(
 
       const pinForecast = calculatePinProbabilities(gexResult.strikes, spot, 0.05);
 
+      // 3. Optionally fetch real intraday 5-min candles
+      let liveCandles: import('../../types').CandleData[] | undefined;
+      try {
+        const todayStr = new Date().toISOString().split('T')[0];
+        const candleResp = await client.getIntradayCandles({
+          securityId: String(reg.underlyingScrip),
+          exchangeSegment: reg.exchangeSegment,
+          instrument: reg.type === 'INDEX' ? 'INDEX' : 'EQUITY',
+          interval: '5',
+          fromDate: `${todayStr} 09:15:00`,
+          toDate: `${todayStr} 15:30:00`,
+        });
+        if (candleResp?.timestamp && candleResp.timestamp.length > 0) {
+          liveCandles = candleResp.timestamp.map((time, idx) => ({
+            time,
+            open: candleResp.open[idx],
+            high: candleResp.high[idx],
+            low: candleResp.low[idx],
+            close: candleResp.close[idx],
+            volume: candleResp.volume[idx],
+          }));
+        }
+      } catch {
+        // Intraday candles optional; falls back to spot-derived candles
+      }
+
       const liveEntry: IndexSnapshotData = {
         symbol: reg.symbol,
         name: reg.name,
@@ -237,6 +263,7 @@ export async function generateMarketSnapshot(
           probability: Number((p.pinProbabilityPct ?? 0).toFixed(2)),
         })),
         strikes: gexResult.strikes,
+        candles: liveCandles,
       };
 
       indicesData[targetName] = liveEntry;

@@ -117,10 +117,10 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span className="status-dot"></span>
             <span className="status-label">{getStatusLabel()}</span>
           </div>
-        ) : sourceMode === 'GIT_SNAPSHOT' ? (
+        ) : sourceMode === 'LIVE_DHAN' || sourceMode === 'GIT_SNAPSHOT' ? (
           <div
             className="snapshot-banner-tag"
-            title={`Loaded from Git repository snapshot: ${snapshotTimestamp || 'Market Close'}`}
+            title={`Loaded from DhanHQ market snapshot: ${snapshotTimestamp || 'Market Close'}`}
             data-testid="snapshot-banner-tag"
             style={{
               display: 'inline-flex',
@@ -128,9 +128,9 @@ export const Navbar: React.FC<NavbarProps> = ({
               gap: '6px',
               padding: '4px 10px',
               borderRadius: '9999px',
-              backgroundColor: 'rgba(56, 189, 248, 0.12)',
-              border: '1px solid rgba(56, 189, 248, 0.3)',
-              color: '#38bdf8',
+              backgroundColor: 'rgba(16, 185, 129, 0.12)',
+              border: '1px solid rgba(16, 185, 129, 0.3)',
+              color: '#10b981',
               fontSize: '11px',
               fontWeight: 600,
               letterSpacing: '0.04em',
@@ -141,10 +141,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                 width: '6px',
                 height: '6px',
                 borderRadius: '50%',
-                backgroundColor: '#38bdf8',
+                backgroundColor: '#10b981',
               }}
             ></span>
-            <span>GIT SNAPSHOT ({formatSnapshotTime(snapshotTimestamp)})</span>
+            <span>LIVE DHAN ({formatSnapshotTime(snapshotTimestamp)})</span>
           </div>
         ) : (
           <div className="mock-banner-tag" title="Stage 1 & 3: Simulated mock dataset">

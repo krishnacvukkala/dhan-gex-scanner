@@ -40,7 +40,11 @@ export const WatchlistTable: React.FC<WatchlistTableProps> = ({
         </div>
         <div className="watchlist-badge">
           <span className="count-pill">{instruments.length}</span>
-          <span className="simulated-tag">SIMULATED</span>
+          {instruments.some((i) => !i.isSimulated) ? (
+            <span className="live-tag" data-testid="live-tag">LIVE DHAN</span>
+          ) : (
+            <span className="simulated-tag" data-testid="simulated-tag">SIMULATED</span>
+          )}
         </div>
       </div>
 
