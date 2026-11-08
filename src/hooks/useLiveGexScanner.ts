@@ -78,9 +78,14 @@ export function useLiveGexScanner(
     let mounted = true;
     loadGitSnapshot().then((snapshot) => {
       if (!mounted || !snapshot) return;
-      const instruments: Instrument[] = Object.values(snapshot.indices).map((idx) =>
-        convertSnapshotToInstrument(idx)
-      );
+      const seen = new Set<string>();
+      const instruments: Instrument[] = [];
+      for (const idx of Object.values(snapshot.indices)) {
+        if (!seen.has(idx.symbol)) {
+          seen.add(idx.symbol);
+          instruments.push(convertSnapshotToInstrument(idx));
+        }
+      }
       if (instruments.length > 0) {
         setSnapshotInstruments(instruments);
         setSnapshotTimestamp(snapshot.generatedAt);

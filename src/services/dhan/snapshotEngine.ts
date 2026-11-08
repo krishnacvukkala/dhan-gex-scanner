@@ -145,6 +145,22 @@ export async function generateMarketSnapshot(
   }
 
   // Live Dhan API fetching
+  // First, verify credentials with a test call so we fail fast with a clear error on 401
+  if (typeof client.getExpiryList === 'function') {
+    try {
+      const testExpiries = await client.getExpiryList(13, 'IDX_I');
+      if (!testExpiries || testExpiries.length === 0) {
+        console.warn('[SnapshotEngine] Warning: No active expiries returned for NIFTY.');
+      }
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      if (errMsg.includes('401') || errMsg.includes('Authentication') || errMsg.includes('Token invalid')) {
+        throw new Error(`DhanHQ API authentication failed (401): Your Access Token has expired. Please generate a fresh token from https://dhanhq.co/docs`);
+      }
+      throw err;
+    }
+  }
+
   for (const targetName of indicesToFetch) {
     const reg =
       getInstrumentBySymbol(targetName) ||
@@ -155,11 +171,34 @@ export async function generateMarketSnapshot(
     if (!reg) continue;
 
     try {
-      const expiry = new Date().toISOString().split('T')[0];
+      // 1. Get valid active expiry from DhanHQ
+      let activeExpiry: string | null = null;
+      if (typeof client.getExpiryList === 'function') {
+        try {
+          const expiries = await client.getExpiryList(reg.underlyingScrip, reg.exchangeSegment);
+          if (expiries && expiries.length > 0) {
+            activeExpiry = expiries[0];
+          }
+        } catch (expErr) {
+          console.warn(`[SnapshotEngine] Could not fetch expiry list for ${reg.symbol}:`, expErr);
+        }
+      }
+
+      if (!activeExpiry) {
+        // Fall back to calculated nearest Thursday expiry
+        const now = new Date();
+        const day = now.getDay();
+        const diff = (4 - day + 7) % 7;
+        const target = new Date(now);
+        target.setDate(now.getDate() + (diff === 0 && now.getHours() >= 16 ? 7 : diff));
+        activeExpiry = target.toISOString().split('T')[0];
+      }
+
+      // 2. Fetch Option Chain using the valid active expiry
       const normChain = await client.getOptionChain({
         UnderlyingScrip: reg.underlyingScrip,
         UnderlyingSeg: reg.exchangeSegment,
-        Expiry: expiry,
+        Expiry: activeExpiry,
       });
 
       const spot = normChain.underlyingPrice;
@@ -185,6 +224,7 @@ export async function generateMarketSnapshot(
         spotPrice: spot,
         timestamp: generatedAt,
         lotSize: reg.lotSize,
+        expiry: activeExpiry,
         netGex: Number((gexResult.netTotalGex / 1e7).toFixed(2)),
         callGex: Number((gexResult.totalCallGex / 1e7).toFixed(2)),
         putGex: Number((gexResult.totalPutGex / 1e7).toFixed(2)),
@@ -207,8 +247,9 @@ export async function generateMarketSnapshot(
       if (reg.symbol === 'NIFTY') {
         indicesData['NIFTY 50'] = liveEntry;
       }
-    } catch {
-      // Fallback to mock instrument if network fails for this instrument
+    } catch (itemErr: unknown) {
+      console.warn(`[SnapshotEngine] Failed fetching live data for ${reg.symbol}:`, (itemErr as Error)?.message || itemErr);
+      // Fallback to mock instrument only if live data fetch fails for this specific item
       const mock = MOCK_INSTRUMENTS.find((m) =>
         matchesSymbolOrName(reg.symbol, m.symbol, m.name) ||
         m.underlyingScrip === reg.underlyingScrip

@@ -5,7 +5,6 @@ on:
     branches:
       - main
     paths-ignore:
-      - 'public/data/**'
       - 'README.md'
       - 'docs/**'
   workflow_dispatch:

@@ -9,11 +9,13 @@ export async function loadGitSnapshot(): Promise<GexSnapshotPayload | null> {
       : './';
   const cleanBase = base.endsWith('/') ? base : `${base}/`;
 
+  const cacheBuster = `?t=${Date.now()}`;
   const possiblePaths = [
-    `${cleanBase}data/latest-gex.json`,
-    './data/latest-gex.json',
-    'data/latest-gex.json',
-    '/data/latest-gex.json',
+    `https://raw.githubusercontent.com/krishnacvukkala/dhan-gex-scanner/main/public/data/latest-gex.json${cacheBuster}`,
+    `${cleanBase}data/latest-gex.json${cacheBuster}`,
+    `./data/latest-gex.json${cacheBuster}`,
+    `data/latest-gex.json${cacheBuster}`,
+    `/data/latest-gex.json${cacheBuster}`,
   ];
 
   for (const path of possiblePaths) {

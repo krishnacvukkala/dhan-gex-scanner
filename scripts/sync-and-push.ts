@@ -23,7 +23,7 @@ async function syncAndPush() {
   run('git add public/data/');
 
   const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
-  const commitMsg = `data: update market snapshot ${timestamp} [skip ci]`;
+  const commitMsg = `data: update market snapshot ${timestamp}`;
   console.log(`📝 [Market Sync] Committing: "${commitMsg}"...`);
   run(`git commit -m "${commitMsg}"`);
 
