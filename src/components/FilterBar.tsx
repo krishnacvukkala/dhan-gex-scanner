@@ -1,6 +1,6 @@
 import React from 'react';
 import { TypeFilter, StatusFilter } from '../types';
-import { Filter, Layers, Zap } from 'lucide-react';
+import { Filter, Layers, Zap, Calendar } from 'lucide-react';
 
 interface FilterBarProps {
   typeFilter: TypeFilter;
@@ -10,6 +10,9 @@ interface FilterBarProps {
   totalCount: number;
   supportCount: number;
   resistanceCount: number;
+  availableDates?: string[];
+  selectedDate?: string;
+  onDateChange?: (date: string) => void;
 }
 
 export const FilterBar: React.FC<FilterBarProps> = ({
@@ -20,6 +23,9 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   totalCount,
   supportCount,
   resistanceCount,
+  availableDates = [],
+  selectedDate = 'LATEST',
+  onDateChange,
 }) => {
   return (
     <div className="filter-bar" data-testid="filter-bar">
@@ -71,6 +77,28 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           <option value="BREACHED">Breached Level</option>
         </select>
       </div>
+
+      {availableDates && availableDates.length > 0 && onDateChange && (
+        <div className="filter-group session-date-group" data-testid="session-date-group">
+          <div className="filter-label">
+            <Calendar size={14} className="text-cyan" />
+            <span>Session:</span>
+          </div>
+          <select
+            className="filter-select session-select font-mono"
+            value={selectedDate || 'LATEST'}
+            onChange={(e) => onDateChange(e.target.value)}
+            data-testid="session-date-select"
+          >
+            <option value="LATEST">● Latest Live / Today ({availableDates[0] || 'Live'})</option>
+            {availableDates.map((d) => (
+              <option key={d} value={d}>
+                📅 {d} (Market Close)
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="filter-stats">
         <div className="stat-item">

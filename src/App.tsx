@@ -19,6 +19,7 @@ import {
   Clock,
   Layers,
   ExternalLink,
+  Calendar,
 } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -40,6 +41,9 @@ export const App: React.FC = () => {
     liveInstruments,
     snapshotInstruments,
     snapshotTimestamp,
+    availableDates,
+    selectedDate,
+    setSelectedDate,
     sourceMode,
     lastSyncTime,
     isPolling,
@@ -147,8 +151,35 @@ export const App: React.FC = () => {
       />
 
       <main className="app-main">
-        {/* Banner: Simulated vs Live Mode */}
-        {isLiveMode ? (
+        {/* Banner: Historical Session vs Simulated vs Live Mode */}
+        {selectedDate && selectedDate !== 'LATEST' ? (
+          <section className="live-status-banner banner-connected" data-testid="historical-session-banner">
+            <div className="banner-content">
+              <Calendar size={18} className="banner-icon text-cyan" />
+              <div className="banner-text">
+                <div className="live-banner-headline">
+                  <strong>📅 Historical Session: {selectedDate} (Audited Market Close)</strong>
+                  <span className="live-badge-detail font-mono">
+                    <Clock size={11} className="inline-icon" /> Snapshot: {selectedDate} 15:30 IST
+                  </span>
+                  <span className="live-badge-detail font-mono">
+                    <Layers size={11} className="inline-icon" /> {rawInstruments.length} Symbols Available
+                  </span>
+                </div>
+                <span>
+                  Viewing historical Black-Scholes Gamma Exposure (GEX), strike walls, and price action for date {selectedDate}.{' '}
+                  <button
+                    type="button"
+                    className="banner-link-btn"
+                    onClick={() => setSelectedDate('LATEST')}
+                  >
+                    Return to Latest Live Session
+                  </button>
+                </span>
+              </div>
+            </div>
+          </section>
+        ) : isLiveMode ? (
           <section
             className={`live-status-banner ${
               connectionStatus === 'ERROR'
@@ -260,6 +291,9 @@ export const App: React.FC = () => {
           totalCount={filteredInstruments.length}
           supportCount={supportWatchlist.length}
           resistanceCount={resistanceWatchlist.length}
+          availableDates={availableDates}
+          selectedDate={selectedDate}
+          onDateChange={setSelectedDate}
         />
 
         {/* Dynamic Views: Loading, Error, Empty, or Normal Watchlists */}

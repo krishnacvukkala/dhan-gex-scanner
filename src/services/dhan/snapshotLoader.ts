@@ -2,6 +2,84 @@ import { GexSnapshotPayload, IndexSnapshotData } from './snapshotEngine';
 import { Instrument, CandleData, NearestGexInfo } from '../../types';
 import { resolveLotSize } from '../gex/lotSize';
 
+export interface HistoryIndex {
+  dates: string[];
+  latest: string;
+  updatedAt?: string;
+}
+
+export async function loadHistoryIndex(): Promise<HistoryIndex> {
+  const base =
+    typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL
+      ? import.meta.env.BASE_URL
+      : './';
+  const cleanBase = base.endsWith('/') ? base : `${base}/`;
+  const cacheBuster = `?t=${Date.now()}`;
+
+  const possiblePaths = [
+    `https://raw.githubusercontent.com/krishnacvukkala/dhan-gex-scanner/main/public/data/history-index.json${cacheBuster}`,
+    `${cleanBase}data/history-index.json${cacheBuster}`,
+    `./data/history-index.json${cacheBuster}`,
+    `data/history-index.json${cacheBuster}`,
+    `/data/history-index.json${cacheBuster}`,
+  ];
+
+  for (const path of possiblePaths) {
+    try {
+      const response = await fetch(path, { cache: 'no-cache' });
+      if (response && response.ok) {
+        return (await response.json()) as HistoryIndex;
+      }
+    } catch {
+      // Continue to next path
+    }
+  }
+
+  // Default known historical dates fallback
+  return {
+    dates: [
+      '2026-11-08', '2026-11-06', '2026-11-05', '2026-11-04',
+      '2026-11-03', '2026-11-02', '2026-11-01', '2026-10-30',
+      '2026-10-29', '2026-10-28', '2026-10-27', '2026-10-26', '2026-10-25'
+    ],
+    latest: '2026-11-08',
+  };
+}
+
+export async function loadSnapshotForDate(dateStr: string): Promise<GexSnapshotPayload | null> {
+  if (!dateStr || dateStr === 'LATEST') {
+    return loadGitSnapshot();
+  }
+
+  const base =
+    typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL
+      ? import.meta.env.BASE_URL
+      : './';
+  const cleanBase = base.endsWith('/') ? base : `${base}/`;
+  const cacheBuster = `?t=${Date.now()}`;
+
+  const possiblePaths = [
+    `https://raw.githubusercontent.com/krishnacvukkala/dhan-gex-scanner/main/public/data/archive/gex-${dateStr}.json${cacheBuster}`,
+    `${cleanBase}data/archive/gex-${dateStr}.json${cacheBuster}`,
+    `./data/archive/gex-${dateStr}.json${cacheBuster}`,
+    `data/archive/gex-${dateStr}.json${cacheBuster}`,
+    `/data/archive/gex-${dateStr}.json${cacheBuster}`,
+  ];
+
+  for (const path of possiblePaths) {
+    try {
+      const response = await fetch(path, { cache: 'no-cache' });
+      if (response && response.ok) {
+        return (await response.json()) as GexSnapshotPayload;
+      }
+    } catch {
+      // Continue to next path
+    }
+  }
+
+  return null;
+}
+
 export async function loadGitSnapshot(): Promise<GexSnapshotPayload | null> {
   const base =
     typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL

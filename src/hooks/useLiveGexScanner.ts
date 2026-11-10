@@ -9,7 +9,12 @@ import {
 import { calculateOptionChainGex } from '../services/gex/engine';
 import { adaptGexResultToInstrument } from '../services/dhan/adapter';
 import { DhanRateLimitError, DhanAuthError } from '../services/dhan/errors';
-import { loadGitSnapshot, convertSnapshotToInstrument } from '../services/dhan/snapshotLoader';
+import {
+  loadGitSnapshot,
+  loadSnapshotForDate,
+  loadHistoryIndex,
+  convertSnapshotToInstrument,
+} from '../services/dhan/snapshotLoader';
 
 export interface UseLiveGexScannerOptions {
   enabled?: boolean;
@@ -25,6 +30,9 @@ export interface UseLiveGexScannerReturn {
   snapshotInstruments: Instrument[];
   snapshotTimestamp: string | null;
   snapshotMode: 'LIVE_DHAN_SNAPSHOT' | 'SIMULATED_SNAPSHOT' | null;
+  availableDates: string[];
+  selectedDate: string;
+  setSelectedDate: (date: string) => Promise<void>;
   sourceMode: 'LIVE_DHAN' | 'GIT_SNAPSHOT' | 'SIMULATED';
   lastSyncTime: Date | null;
   isPolling: boolean;
@@ -67,6 +75,8 @@ export function useLiveGexScanner(
   const [snapshotInstruments, setSnapshotInstruments] = useState<Instrument[]>([]);
   const [snapshotTimestamp, setSnapshotTimestamp] = useState<string | null>(null);
   const [snapshotMode, setSnapshotMode] = useState<'LIVE_DHAN_SNAPSHOT' | 'SIMULATED_SNAPSHOT' | null>(null);
+  const [availableDates, setAvailableDates] = useState<string[]>([]);
+  const [selectedDate, setSelectedDateState] = useState<string>('LATEST');
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
   const [isPolling, setIsPolling] = useState<boolean>(false);
   const [pollIntervalMs, setPollIntervalMs] = useState<number>(
@@ -75,7 +85,37 @@ export function useLiveGexScanner(
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [expiryDate, setExpiryDate] = useState<string>(getNearestThursdayExpiry());
 
-  // Load Git snapshot on mount
+  // Load available historical dates manifest on mount
+  useEffect(() => {
+    loadHistoryIndex().then((idx) => {
+      if (idx && idx.dates && idx.dates.length > 0) {
+        setAvailableDates(idx.dates);
+      }
+    });
+  }, []);
+
+  // Handler to switch between historical dates or latest snapshot
+  const setSelectedDate = useCallback(async (date: string) => {
+    setSelectedDateState(date);
+    const snapshot = await loadSnapshotForDate(date);
+    if (!snapshot) return;
+
+    const seen = new Set<string>();
+    const instruments: Instrument[] = [];
+    for (const idx of Object.values(snapshot.indices)) {
+      if (!seen.has(idx.symbol)) {
+        seen.add(idx.symbol);
+        instruments.push(convertSnapshotToInstrument(idx));
+      }
+    }
+    if (instruments.length > 0) {
+      setSnapshotInstruments(instruments);
+      setSnapshotTimestamp(snapshot.generatedAt);
+      setSnapshotMode(snapshot.mode || 'LIVE_DHAN_SNAPSHOT');
+    }
+  }, []);
+
+  // Load latest Git snapshot on initial mount
   useEffect(() => {
     let mounted = true;
     loadGitSnapshot().then((snapshot) => {
@@ -263,6 +303,9 @@ export function useLiveGexScanner(
     snapshotInstruments,
     snapshotTimestamp,
     snapshotMode,
+    availableDates,
+    selectedDate,
+    setSelectedDate,
     sourceMode,
     lastSyncTime,
     isPolling,

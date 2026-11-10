@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "snapshot:fetch": "tsx scripts/fetch-market-snapshot.ts",
     "market:sync": "tsx scripts/sync-and-push.ts",
-    "market:daemon": "tsx scripts/market-daemon.ts"
+    "market:daemon": "tsx scripts/market-daemon.ts",
+    "history:fetch": "tsx scripts/download-historical-data.ts"
   },
   "dependencies": {
     "lightweight-charts": "^4.2.2",
