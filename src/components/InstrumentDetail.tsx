@@ -25,6 +25,10 @@ import {
   Gauge,
   Flame,
   Target,
+  Maximize2,
+  Minimize2,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react';
 
 interface InstrumentDetailProps {
@@ -39,6 +43,8 @@ export const InstrumentDetail: React.FC<InstrumentDetailProps> = ({
   const [activeTab, setActiveTab] = useState<'chart' | 'strikes' | 'chain' | 'drift' | 'velocity' | 'pin'>('chart');
   const [selectedExpiry, setSelectedExpiry] = useState<string>('0DTE');
   const [calculationModel, setCalculationModel] = useState<'CONVENTIONAL' | 'PC_GEX'>('CONVENTIONAL');
+  const [isMaximized, setIsMaximized] = useState<boolean>(false);
+  const [isSummaryCollapsed, setIsSummaryCollapsed] = useState<boolean>(false);
   const isPositive = instrument.change >= 0;
   const rangeSpan = Math.max(1, instrument.dayHigh - instrument.dayLow);
   const currentPosPct = Math.min(
@@ -84,7 +90,7 @@ export const InstrumentDetail: React.FC<InstrumentDetailProps> = ({
   return (
     <div className="detail-modal-backdrop" onClick={onClose} data-testid="instrument-detail-modal">
       <div
-        className="detail-modal-card"
+        className={`detail-modal-card ${isMaximized ? 'is-fullscreen' : ''}`}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-label={`${instrument.symbol} Detail View`}
@@ -161,28 +167,39 @@ export const InstrumentDetail: React.FC<InstrumentDetailProps> = ({
                 {instrument.changePercent.toFixed(2)}%)
               </span>
             </div>
-            <button
-              className="close-btn"
-              onClick={onClose}
-              aria-label="Close detail view"
-              data-testid="close-detail-btn"
-            >
-              <X size={20} />
-            </button>
+            <div className="detail-header-actions">
+              <button
+                className="expand-btn"
+                onClick={() => setIsMaximized(!isMaximized)}
+                title={isMaximized ? 'Restore standard window size' : 'Maximize to full screen window'}
+                aria-label="Toggle full screen window"
+                data-testid="expand-modal-btn"
+              >
+                {isMaximized ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+              </button>
+              <button
+                className="close-btn"
+                onClick={onClose}
+                aria-label="Close detail view"
+                data-testid="close-detail-btn"
+              >
+                <X size={18} />
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Notice Bar */}
         {instrument.isSimulated ? (
           <div className="simulation-notice-bar">
-            <AlertTriangle size={16} className="text-amber" />
+            <AlertTriangle size={15} className="text-amber" />
             <span>
               <strong>Simulated GEX Profile:</strong> Real DhanHQ API feeds and Black-Scholes gamma calculations will be integrated in subsequent stages. All prices, candles, and GEX levels shown are mock data.
             </span>
           </div>
         ) : (
           <div className="live-notice-bar">
-            <Activity size={16} className="text-cyan" />
+            <Activity size={15} className="text-cyan" />
             <span>
               <strong>Real-Time DhanHQ Market Data:</strong> Analytical Greeks & GEX calculated with Black-Scholes formula using live option chain open interest and spot prices.
             </span>
@@ -192,165 +209,170 @@ export const InstrumentDetail: React.FC<InstrumentDetailProps> = ({
         {/* Rule 11 Segregated Experimental PC-GEX Banner */}
         {calculationModel === 'PC_GEX' && pcGexResult && (
           <div className="pc-gex-banner" data-testid="pc-gex-experimental-banner">
-            <AlertTriangle size={16} className="text-amber" />
+            <AlertTriangle size={15} className="text-amber" />
             <div className="pc-gex-banner-text">
               <strong>Rule 11 Segregated Experimental Model (PC-GEX):</strong> {pcGexResult.disclaimer}
             </div>
           </div>
         )}
 
-        {/* Day Range & Volume bar */}
-        <div className="day-range-section">
-          <div className="range-labels">
-            <span className="font-mono text-muted">
-              Low: ₹{instrument.dayLow.toLocaleString('en-IN')}
-            </span>
-            <span className="font-mono text-muted">Volume: {instrument.volume}</span>
-            <span className="font-mono text-muted">
-              High: ₹{instrument.dayHigh.toLocaleString('en-IN')}
-            </span>
-          </div>
-          <div className="range-bar-track">
-            <div
-              className="range-bar-progress"
-              style={{ width: `${currentPosPct}%` }}
-            />
-            <div
-              className="range-current-pin"
-              style={{ left: `${currentPosPct}%` }}
-              title={`Current: ₹${instrument.lastPrice}`}
-            />
-          </div>
-        </div>
+        {/* Collapsible Summary HUD section */}
+        {!isSummaryCollapsed && (
+          <>
+            {/* Day Range & Volume bar */}
+            <div className="day-range-section">
+              <div className="range-labels">
+                <span className="font-mono text-muted">
+                  Low: ₹{instrument.dayLow.toLocaleString('en-IN')}
+                </span>
+                <span className="font-mono text-muted">Volume: {instrument.volume}</span>
+                <span className="font-mono text-muted">
+                  High: ₹{instrument.dayHigh.toLocaleString('en-IN')}
+                </span>
+              </div>
+              <div className="range-bar-track">
+                <div
+                  className="range-bar-progress"
+                  style={{ width: `${currentPosPct}%` }}
+                />
+                <div
+                  className="range-current-pin"
+                  style={{ left: `${currentPosPct}%` }}
+                  title={`Current: ₹${instrument.lastPrice}`}
+                />
+              </div>
+            </div>
 
-        {/* GEX Metrics Grid */}
-        <div className="gex-metrics-grid">
-          {/* Put Wall */}
-          <div className="gex-metric-card support-border">
-            <div className="metric-header">
-              <span className="metric-title">Put Wall (Support)</span>
-              <span className="metric-icon support-text">
-                <Compass size={16} />
-              </span>
-            </div>
-            <div className="metric-value font-mono">
-              ₹{effectivePutWall.toLocaleString('en-IN')}
-            </div>
-            <div className="metric-subtext">
-              Primary dealer put gamma buffer. Heavy support zone.
-            </div>
-          </div>
+            {/* GEX Metrics Grid */}
+            <div className="gex-metrics-grid">
+              {/* Put Wall */}
+              <div className="gex-metric-card support-border">
+                <div className="metric-header">
+                  <span className="metric-title">Put Wall (Support)</span>
+                  <span className="metric-icon support-text">
+                    <Compass size={15} />
+                  </span>
+                </div>
+                <div className="metric-value font-mono">
+                  ₹{effectivePutWall.toLocaleString('en-IN')}
+                </div>
+                <div className="metric-subtext">
+                  Primary dealer put gamma buffer.
+                </div>
+              </div>
 
-          {/* Gamma Flip */}
-          <div className="gex-metric-card flip-border">
-            <div className="metric-header">
-              <span className="metric-title">Gamma Flip Level</span>
-              <span className="metric-icon flip-text">
-                <Activity size={16} />
-              </span>
-            </div>
-            <div className="metric-value font-mono">
-              ₹{effectiveGammaFlip.toLocaleString('en-IN')}
-            </div>
-            <div className="metric-subtext">
-              Zero net dealer gamma. Volatility expands below this line.
-            </div>
-          </div>
+              {/* Gamma Flip */}
+              <div className="gex-metric-card flip-border">
+                <div className="metric-header">
+                  <span className="metric-title">Gamma Flip Level</span>
+                  <span className="metric-icon flip-text">
+                    <Activity size={15} />
+                  </span>
+                </div>
+                <div className="metric-value font-mono">
+                  ₹{effectiveGammaFlip.toLocaleString('en-IN')}
+                </div>
+                <div className="metric-subtext">
+                  Zero net dealer gamma line.
+                </div>
+              </div>
 
-          {/* Call Wall */}
-          <div className="gex-metric-card resistance-border">
-            <div className="metric-header">
-              <span className="metric-title">Call Wall (Resistance)</span>
-              <span className="metric-icon resistance-text">
-                <Compass size={16} />
-              </span>
-            </div>
-            <div className="metric-value font-mono">
-              ₹{effectiveCallWall.toLocaleString('en-IN')}
-            </div>
-            <div className="metric-subtext">
-              Primary dealer call gamma cap. Pinning resistance zone.
-            </div>
-          </div>
+              {/* Call Wall */}
+              <div className="gex-metric-card resistance-border">
+                <div className="metric-header">
+                  <span className="metric-title">Call Wall (Resistance)</span>
+                  <span className="metric-icon resistance-text">
+                    <Target size={15} />
+                  </span>
+                </div>
+                <div className="metric-value font-mono">
+                  ₹{effectiveCallWall.toLocaleString('en-IN')}
+                </div>
+                <div className="metric-subtext">
+                  Primary dealer call gamma cap.
+                </div>
+              </div>
 
-          {/* Net GEX & Bias */}
-          <div className="gex-metric-card neutral-border">
-            <div className="metric-header">
-              <span className="metric-title">
-                {calculationModel === 'PC_GEX' ? 'Net PC-GEX' : 'Net GEX & Dealer Bias'}
-              </span>
-              <span className="metric-icon neutral-text">
-                <Layers size={16} />
-              </span>
-            </div>
-            <div className="metric-value font-mono">
-              {effectiveNetGex > 0 ? '+' : ''}
-              {effectiveNetGex.toFixed(1)} {instrument.netGexUnit}
-            </div>
-            <div className="metric-subtext">
-              <span
-                className={`bias-badge ${
-                  effectiveDealerBias === 'LONG_GAMMA' ? 'long-bias' : 'short-bias'
-                }`}
-              >
-                {effectiveDealerBias === 'LONG_GAMMA'
-                  ? 'Long Gamma (Mean-Reverting)'
-                  : 'Short Gamma (Volatility Accelerating)'}
-              </span>
-            </div>
-          </div>
+              {/* Net GEX & Bias */}
+              <div className="gex-metric-card neutral-border">
+                <div className="metric-header">
+                  <span className="metric-title">
+                    {calculationModel === 'PC_GEX' ? 'Net PC-GEX' : 'Net GEX & Dealer Bias'}
+                  </span>
+                  <span className="metric-icon neutral-text">
+                    <Layers size={15} />
+                  </span>
+                </div>
+                <div className="metric-value font-mono">
+                  {effectiveNetGex > 0 ? '+' : ''}
+                  {effectiveNetGex.toFixed(1)} {instrument.netGexUnit}
+                </div>
+                <div className="metric-subtext">
+                  <span
+                    className={`bias-badge ${
+                      effectiveDealerBias === 'LONG_GAMMA' ? 'long-bias' : 'short-bias'
+                    }`}
+                  >
+                    {effectiveDealerBias === 'LONG_GAMMA'
+                      ? 'Long Gamma'
+                      : 'Short Gamma'}
+                  </span>
+                </div>
+              </div>
 
-          {/* Net Delta Exposure (DEX) */}
-          <div className="gex-metric-card dex-border" data-testid="metric-dex-card">
-            <div className="metric-header">
-              <span className="metric-title">Net Delta Exposure (DEX)</span>
-              <span className="metric-icon dex-text">
-                <Gauge size={16} />
-              </span>
-            </div>
-            <div className="metric-value font-mono">
-              {dexResult.netDexCr >= 0 ? '+' : ''}
-              ₹{dexResult.netDexCr} Cr
-            </div>
-            <div className="metric-subtext">
-              <span
-                className={`bias-badge ${
-                  dexResult.dealerDirectionalBias === 'NET_LONG_DELTA'
-                    ? 'long-bias'
-                    : dexResult.dealerDirectionalBias === 'NET_SHORT_DELTA'
-                    ? 'short-bias'
-                    : 'neutral-bias'
-                }`}
-              >
-                {dexResult.dealerDirectionalBias === 'NET_LONG_DELTA'
-                  ? 'Long Delta (Dealers Long)'
-                  : dexResult.dealerDirectionalBias === 'NET_SHORT_DELTA'
-                  ? 'Short Delta (Dealers Short)'
-                  : 'Delta Neutral'}
-              </span>
-            </div>
-          </div>
+              {/* Net Delta Exposure (DEX) */}
+              <div className="gex-metric-card dex-border" data-testid="metric-dex-card">
+                <div className="metric-header">
+                  <span className="metric-title">Net Delta Exposure (DEX)</span>
+                  <span className="metric-icon dex-text">
+                    <Gauge size={15} />
+                  </span>
+                </div>
+                <div className="metric-value font-mono">
+                  {dexResult.netDexCr >= 0 ? '+' : ''}
+                  ₹{dexResult.netDexCr} Cr
+                </div>
+                <div className="metric-subtext">
+                  <span
+                    className={`bias-badge ${
+                      dexResult.dealerDirectionalBias === 'NET_LONG_DELTA'
+                        ? 'long-bias'
+                        : dexResult.dealerDirectionalBias === 'NET_SHORT_DELTA'
+                        ? 'short-bias'
+                        : 'neutral-bias'
+                    }`}
+                  >
+                    {dexResult.dealerDirectionalBias === 'NET_LONG_DELTA'
+                      ? 'Long Delta'
+                      : dexResult.dealerDirectionalBias === 'NET_SHORT_DELTA'
+                      ? 'Short Delta'
+                      : 'Delta Neutral'}
+                  </span>
+                </div>
+              </div>
 
-          {/* 1% Underlying Move Hedging Flow Requirement */}
-          <div className="gex-metric-card hedge-border" data-testid="metric-hedge-flow-card">
-            <div className="metric-header">
-              <span className="metric-title">1% Move Re-hedging Flow</span>
-              <span className="metric-icon hedge-text">
-                <TrendingUp size={16} />
-              </span>
+              {/* 1% Underlying Move Hedging Flow Requirement */}
+              <div className="gex-metric-card hedge-border" data-testid="metric-hedge-flow-card">
+                <div className="metric-header">
+                  <span className="metric-title">1% Move Re-hedging Flow</span>
+                  <span className="metric-icon hedge-text">
+                    <TrendingUp size={15} />
+                  </span>
+                </div>
+                <div className="metric-value font-mono">
+                  ₹{dexResult.hedgingFlow1PctCr} Cr
+                </div>
+                <div className="metric-subtext">
+                  {dexResult.hedgingAction === 'DEALERS_SELL_RALLIES_BUY_DIPS'
+                    ? 'Sell Rallies / Buy Dips'
+                    : dexResult.hedgingAction === 'DEALERS_BUY_RALLIES_SELL_DIPS'
+                    ? 'Buy Rallies / Sell Dips'
+                    : 'Neutral Flow'}
+                </div>
+              </div>
             </div>
-            <div className="metric-value font-mono">
-              ₹{dexResult.hedgingFlow1PctCr} Cr
-            </div>
-            <div className="metric-subtext">
-              {dexResult.hedgingAction === 'DEALERS_SELL_RALLIES_BUY_DIPS'
-                ? 'Sell Rallies / Buy Dips'
-                : dexResult.hedgingAction === 'DEALERS_BUY_RALLIES_SELL_DIPS'
-                ? 'Buy Rallies / Sell Dips'
-                : 'Neutral Flow'}
-            </div>
-          </div>
-        </div>
+          </>
+        )}
 
         {/* View Tabs: Chart vs Strike GEX Profile vs Option Chain vs Drift */}
         <div className="detail-view-tabs" data-testid="detail-view-tabs">
@@ -416,183 +438,185 @@ export const InstrumentDetail: React.FC<InstrumentDetailProps> = ({
               <span>0DTE Pin Forecaster</span>
             </button>
           )}
+
+          <div style={{ marginLeft: 'auto' }}>
+            <button
+              type="button"
+              className="hud-toggle-btn"
+              onClick={() => setIsSummaryCollapsed(!isSummaryCollapsed)}
+              title={isSummaryCollapsed ? 'Show GEX Summary HUD' : 'Collapse Summary HUD for maximum window space'}
+              data-testid="toggle-summary-btn"
+            >
+              {isSummaryCollapsed ? <ChevronDown size={13} /> : <ChevronUp size={13} />}
+              <span>{isSummaryCollapsed ? 'Show HUD' : 'Collapse HUD'}</span>
+            </button>
+          </div>
         </div>
 
-        {/* Tab 1: Chart View */}
-        {activeTab === 'chart' && (
-          <div className="detail-chart-container" data-testid="chart-view-panel">
-            <GexChart
-              candles={instrument.candles}
-              symbol={instrument.symbol}
+        {/* Tab Content Body (fills available vertical space) */}
+        <div className="detail-tab-body">
+          {/* Tab 1: Chart View */}
+          {activeTab === 'chart' && (
+            <div className="detail-chart-container" data-testid="chart-view-panel">
+              <GexChart
+                candles={instrument.candles}
+                symbol={instrument.symbol}
+                callWall={effectiveCallWall}
+                putWall={effectivePutWall}
+                gammaFlip={effectiveGammaFlip}
+                currentPrice={instrument.lastPrice}
+                prevSession={instrument.prevSession}
+              />
+            </div>
+          )}
+
+          {/* Tab 2: Strike GEX Table View */}
+          {activeTab === 'strikes' && strikes.length > 0 && (
+            <div className="strike-profile-container" data-testid="strike-profile-panel">
+              <div className="strike-table-wrapper">
+                <table className="strike-profile-table">
+                  <thead>
+                    <tr>
+                      <th>Strike</th>
+                      <th>Role / Wall</th>
+                      <th>Net GEX (₹ Cr)</th>
+                      <th>Call OI</th>
+                      <th>Put OI</th>
+                      <th>Call IV</th>
+                      <th>Put IV</th>
+                      <th>Dist to Spot</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {strikes.map((s) => {
+                      const isNetPositive = s.netGex >= 0;
+                      const isCallWall = s.strikePrice === effectiveCallWall;
+                      const isPutWall = s.strikePrice === effectivePutWall;
+                      const isFlip = Math.abs(s.strikePrice - effectiveGammaFlip) < 25;
+                      const distanceToSpot = s.strikePrice - instrument.lastPrice;
+
+                      return (
+                        <tr
+                          key={s.strikePrice}
+                          className={`strike-row ${
+                            isCallWall
+                              ? 'row-call-wall'
+                              : isPutWall
+                              ? 'row-put-wall'
+                              : isFlip
+                              ? 'row-flip'
+                              : ''
+                          }`}
+                        >
+                          <td className="font-mono font-semibold">
+                            ₹{s.strikePrice.toLocaleString('en-IN')}
+                          </td>
+                          <td>
+                            {isCallWall && (
+                              <span className="strike-badge call-wall-badge">
+                                CALL WALL
+                              </span>
+                            )}
+                            {isPutWall && (
+                              <span className="strike-badge put-wall-badge">
+                                PUT WALL
+                              </span>
+                            )}
+                            {isFlip && (
+                              <span className="strike-badge flip-badge">
+                                FLIP ZONE
+                              </span>
+                            )}
+                            {!isCallWall && !isPutWall && !isFlip && (
+                              <span className="text-muted">—</span>
+                            )}
+                          </td>
+                          <td
+                            className={`font-mono font-semibold ${
+                              isNetPositive ? 'text-emerald' : 'text-rose'
+                            }`}
+                          >
+                            {isNetPositive ? '+' : ''}
+                            {(s.netGex / 10000000).toFixed(2)} Cr
+                          </td>
+                          <td className="font-mono text-muted">
+                            {s.callOi.toLocaleString('en-IN')}
+                          </td>
+                          <td className="font-mono text-muted">
+                            {s.putOi.toLocaleString('en-IN')}
+                          </td>
+                          <td className="font-mono text-muted">
+                            {(s.callIv * 100).toFixed(1)}%
+                          </td>
+                          <td className="font-mono text-muted">
+                            {(s.putIv * 100).toFixed(1)}%
+                          </td>
+                          <td className="font-mono text-muted">
+                            {distanceToSpot >= 0 ? '+' : ''}
+                            {distanceToSpot.toFixed(0)} pts
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Tab 3: Full Option Chain & Greeks View */}
+          {activeTab === 'chain' && strikes.length > 0 && (
+            <OptionChainTable
+              strikes={strikes}
+              spotPrice={instrument.lastPrice}
               callWall={effectiveCallWall}
               putWall={effectivePutWall}
               gammaFlip={effectiveGammaFlip}
-              currentPrice={instrument.lastPrice}
-              prevSession={instrument.prevSession}
+              symbol={instrument.symbol}
             />
-          </div>
-        )}
+          )}
 
-        {/* Tab 2: Strike GEX Table View */}
-        {activeTab === 'strikes' && strikes.length > 0 && (
-          <div className="strike-profile-container" data-testid="strike-profile-panel">
-            <div className="strike-table-wrapper">
-              <table className="strike-profile-table">
-                <thead>
-                  <tr>
-                    <th>Strike</th>
-                    <th>Role / Wall</th>
-                    <th>Net GEX (₹ Cr)</th>
-                    <th>Call OI</th>
-                    <th>Put OI</th>
-                    <th>Call IV</th>
-                    <th>Put IV</th>
-                    <th>Dist to Spot</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {strikes.map((s) => {
-                    const isNetPositive = s.netGex >= 0;
-                    const isCallWall = s.strikePrice === effectiveCallWall;
-                    const isPutWall = s.strikePrice === effectivePutWall;
-                    const isFlip = Math.abs(s.strikePrice - effectiveGammaFlip) < 25;
-                    const distanceToSpot = s.strikePrice - instrument.lastPrice;
+          {/* Tab 4: Intraday GEX Drift Chart */}
+          {activeTab === 'drift' && (
+            <GexDriftChart
+              history={driftHistory}
+              symbol={instrument.symbol}
+            />
+          )}
 
-                    return (
-                      <tr
-                        key={s.strikePrice}
-                        className={`strike-row ${
-                          isCallWall
-                            ? 'row-call-wall'
-                            : isPutWall
-                            ? 'row-put-wall'
-                            : isFlip
-                            ? 'row-flip'
-                            : ''
-                        }`}
-                      >
-                        <td className="font-mono font-semibold">
-                          ₹{s.strikePrice.toLocaleString('en-IN')}
-                        </td>
-                        <td>
-                          {isCallWall && (
-                            <span className="strike-badge call-wall-badge">
-                              CALL WALL
-                            </span>
-                          )}
-                          {isPutWall && (
-                            <span className="strike-badge put-wall-badge">
-                              PUT WALL
-                            </span>
-                          )}
-                          {isFlip && (
-                            <span className="strike-badge flip-badge">
-                              FLIP ZONE
-                            </span>
-                          )}
-                          {!isCallWall && !isPutWall && !isFlip && (
-                            <span className="text-muted">—</span>
-                          )}
-                        </td>
-                        <td
-                          className={`font-mono font-semibold ${
-                            isNetPositive ? 'text-emerald' : 'text-rose'
-                          }`}
-                        >
-                          {isNetPositive ? '+' : ''}
-                          {(s.netGex / 10000000).toFixed(2)} Cr
-                        </td>
-                        <td className="font-mono text-muted">
-                          {s.callOi.toLocaleString('en-IN')}
-                        </td>
-                        <td className="font-mono text-muted">
-                          {s.putOi.toLocaleString('en-IN')}
-                        </td>
-                        <td className="font-mono text-muted">
-                          {(s.callIv * 100).toFixed(1)}%
-                        </td>
-                        <td className="font-mono text-muted">
-                          {(s.putIv * 100).toFixed(1)}%
-                        </td>
-                        <td className="font-mono text-muted">
-                          {distanceToSpot >= 0 ? '+' : ''}
-                          {distanceToSpot.toFixed(0)} pts
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
+          {/* Tab 5: Real-Time ΔOI & Gamma Velocity Matrix */}
+          {activeTab === 'velocity' && strikes.length > 0 && (
+            <OiVelocityMatrix
+              strikes={strikes}
+              spotPrice={instrument.lastPrice}
+              lotSize={instrument.lotSize || 25}
+              symbol={instrument.symbol}
+            />
+          )}
 
-        {/* Tab 3: Full Option Chain & Greeks View */}
-        {activeTab === 'chain' && strikes.length > 0 && (
-          <OptionChainTable
-            strikes={strikes}
-            spotPrice={instrument.lastPrice}
-            callWall={effectiveCallWall}
-            putWall={effectivePutWall}
-            gammaFlip={effectiveGammaFlip}
-            symbol={instrument.symbol}
-          />
-        )}
-
-        {/* Tab 4: Intraday GEX Drift Chart */}
-        {activeTab === 'drift' && (
-          <GexDriftChart
-            history={driftHistory}
-            symbol={instrument.symbol}
-          />
-        )}
-
-        {/* Tab 5: Real-Time ΔOI & Gamma Velocity Matrix */}
-        {activeTab === 'velocity' && strikes.length > 0 && (
-          <OiVelocityMatrix
-            strikes={strikes}
-            spotPrice={instrument.lastPrice}
-            lotSize={instrument.lotSize || 25}
-            symbol={instrument.symbol}
-          />
-        )}
-
-        {/* Tab 6: 0DTE Expiry Pin Probability & Magnetic Strike Forecaster */}
-        {activeTab === 'pin' && strikes.length > 0 && (
-          <PinProbabilityForecaster
-            symbol={instrument.symbol}
-            spotPrice={instrument.lastPrice}
-            strikes={strikes}
-            callWall={effectiveCallWall}
-            putWall={effectivePutWall}
-            gammaFlip={effectiveGammaFlip}
-            timeToExpiryYears={0.0005}
-            lotSize={instrument.lotSize || 25}
-          />
-        )}
+          {/* Tab 6: 0DTE Expiry Pin Probability & Magnetic Strike Forecaster */}
+          {activeTab === 'pin' && strikes.length > 0 && (
+            <PinProbabilityForecaster
+              symbol={instrument.symbol}
+              spotPrice={instrument.lastPrice}
+              strikes={strikes}
+              callWall={effectiveCallWall}
+              putWall={effectivePutWall}
+              gammaFlip={effectiveGammaFlip}
+              timeToExpiryYears={0.0005}
+              lotSize={instrument.lotSize || 25}
+            />
+          )}
+        </div>
 
         {/* Methodology Footer */}
-        <div className="detail-footer-notes">
-          <div className="note-card">
-            {calculationModel === 'PC_GEX' ? (
-              <>
-                <h4 className="text-amber">Experimental PC-GEX Model Reference (Rule 11)</h4>
-                <p>
-                  PC-GEX (Put-Call / Positional-Cash Gamma Exposure) balances call gamma against put gamma with spot cash adjustments.
-                  Notice: This analytical model is strictly experimental. In accordance with project Rule 11, it is segregated from conventional risk reporting and never synthesizes missing footprint data.
-                </p>
-              </>
-            ) : (
-              <>
-                <h4>Conventional GEX Reference</h4>
-                <p>
-                  In conventional Black-Scholes GEX, dealers are assumed to be long calls and short puts at strike open interest.
-                  Positive net gamma implies dealers trade counter-trend (dampening market swings), while negative net gamma forces dealers to trade with trend (amplifying price moves).
-                </p>
-              </>
-            )}
+        {isSummaryCollapsed && (
+          <div className="detail-footer-notes-compact">
+            <span className="font-mono text-muted">
+              {calculationModel === 'PC_GEX' ? 'Experimental PC-GEX Model (Rule 11)' : 'Conventional Black-Scholes Dealer GEX & Hedging Engine'}
+            </span>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

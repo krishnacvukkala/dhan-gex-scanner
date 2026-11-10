@@ -44,9 +44,10 @@ export const GexChart: React.FC<GexChartProps> = ({
     const container = chartContainerRef.current;
     container.innerHTML = '';
 
+    const chartHeight = Math.max(450, container.clientHeight || 450);
     const chart = createChart(container, {
       width: container.clientWidth,
-      height: 380,
+      height: chartHeight,
       layout: {
         background: { type: ColorType.Solid, color: '#0b1120' },
         textColor: '#94a3b8',
@@ -224,7 +225,10 @@ export const GexChart: React.FC<GexChartProps> = ({
     // Responsive Resize Handler
     const handleResize = () => {
       if (container && chart) {
-        chart.applyOptions({ width: container.clientWidth });
+        chart.applyOptions({
+          width: container.clientWidth,
+          height: Math.max(450, container.clientHeight || 450),
+        });
       }
     };
 
@@ -270,7 +274,7 @@ export const GexChart: React.FC<GexChartProps> = ({
       <div
         ref={chartContainerRef}
         className="chart-canvas-container"
-        style={{ width: '100%', minHeight: '380px' }}
+        style={{ width: '100%', flex: 1, minHeight: '450px' }}
       />
     </div>
   );
